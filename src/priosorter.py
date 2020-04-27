@@ -17,7 +17,7 @@ def _sort_key(prio_labels):
 	return _func
 
 
-def sort_prios(api: todoist.TodoistAPI):
+def sort_prios(api: todoist.TodoistAPI, timezone):
 	api.sync()
 
 	prio_labels = {}
@@ -29,7 +29,7 @@ def sort_prios(api: todoist.TodoistAPI):
 			except ValueError:
 				pass
 
-	now = datetime.utcnow()
+	now = datetime.now(timezone)
 	items = []
 	for item in api.state['items']:
 		if not item['due'] or item['date_completed']:
