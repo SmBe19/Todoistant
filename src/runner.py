@@ -1,7 +1,7 @@
 import threading
 
-import assistants.priosorter
 import assistants.automover
+import assistants.priosorter
 
 ASSISTANTS = {
 	'priosorter': assistants.priosorter,
@@ -21,6 +21,9 @@ class Runner:
 			for account in self.config_manager:
 				api_synced = False
 				with self.config_manager.get(account) as (cfg, tmp):
+					if not cfg['enabled']:
+						continue
+
 					# TODO maybe we should make a copy so we don't hold the lock for the whole duration
 					for assistant in ASSISTANTS:
 						if assistant in cfg and cfg[assistant]['enabled']:

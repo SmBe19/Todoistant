@@ -4,13 +4,23 @@ import json
 import socket
 
 import runner
-import server
+from consts import SOCKET_NAME
 
 
 def prepare_parser(subparsers: argparse._SubParsersAction):
 	add_account = subparsers.add_parser('add_account')
 	add_account.set_defaults(func=run_add_account)
-	add_account.add_argument('token', nargs='?', default='', help='API token to access account')
+	add_account.add_argument('account', help='Account ID')
+
+	enable_account = subparsers.add_parser('enable_account')
+	enable_account.set_defaults(func=run_enable_account)
+	enable_account.add_argument('account', help='Account ID')
+	enable_account.add_argument('enabled', choices=['true', 'false'], help='Whether to enable or disable')
+
+	set_token = subparsers.add_parser('set_token')
+	set_token.set_defaults(func=run_set_token)
+	set_token.add_argument('account', help='Account ID')
+	set_token.add_argument('token', nargs='?', default='', help='API token to access account')
 
 	enable = subparsers.add_parser('enable')
 	enable.set_defaults(func=run_set_enable)
@@ -21,8 +31,18 @@ def prepare_parser(subparsers: argparse._SubParsersAction):
 
 def run_add_account(args):
 	client = Client()
+	print(client.add_account(args.account))
+
+
+def run_enable_account(args):
+	client = Client()
+	print(client.enable_account(args.account, args.enabled == 'true'))
+
+
+def run_set_token(args):
+	client = Client()
 	token = args.token or getpass.getpass('Token: ')
-	print(client.add_account(token))
+	print(client.set_token(args.account, token))
 
 
 def run_set_enable(args):
@@ -34,7 +54,7 @@ class Client:
 
 	def __init__(self):
 		self.socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-		self.socket.connect(server.SOCKET_NAME)
+		self.socket.connect(SOCKET_NAME)
 		self.rfile = self.socket.makefile('rb')
 		self.wfile = self.socket.makefile('wb')
 

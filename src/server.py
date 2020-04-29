@@ -4,20 +4,11 @@ import socketserver
 import threading
 import time
 
-import server_handlers
 import runner
+import server_handlers
 import todoist_api
 from config import ConfigManager
-
-SOCKET_NAME = 'todoistant.sock'
-CACHE_PATH = 'cache'
-CONFIG_PATH = 'config'
-
-
-def prepare_parser(subparsers):
-	server = subparsers.add_parser('server')
-	server.set_defaults(func=run_server)
-
+from consts import SOCKET_NAME, CACHE_PATH, CONFIG_PATH
 
 config_manager = ConfigManager()
 
