@@ -2,15 +2,16 @@
 
 import base64
 import os
-import requests
+import sys
 
 import dotenv
+import requests
 from flask import Flask, render_template, session, redirect, url_for, request, flash
 
-import sys
 sys.path.append(os.path.abspath('src'))
 
 from client import Client
+import runner
 
 os.chdir(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 dotenv.load_dotenv('secrets.env')
@@ -20,6 +21,13 @@ app.secret_key = os.environ['SECRET_KEY']
 
 assert 'CLIENT_ID' in os.environ
 assert 'CLIENT_SECRET' in os.environ
+
+
+@app.template_filter()
+def format_datetime(value, format='%d.%m.%Y %H:%M:%S'):
+	if not value:
+		return '-'
+	return value.strftime(format)
 
 
 @app.route('/')
@@ -33,7 +41,27 @@ def index():
 def config():
 	if 'userid' not in session:
 		return redirect(url_for('config'))
-	return render_template('config.html')
+	with Client() as client:
+		return render_template('config.html', config=client.get_config(session['userid']))
+
+
+@app.route('/config/update/<assistant>', methods=['POST'])
+def update_config(assistant):
+	if assistant not in runner.ASSISTANTS:
+		flash('Unknown assistant ' + assistant)
+		return redirect(url_for('config'))
+	assistant_mod = runner.ASSISTANTS[assistant]
+	with Client() as client:
+		if 'enabled' in request.form:
+			client.set_enabled(session['userid'], assistant, request.form['enabled'] == 'true')
+
+		update = {}
+		for key in assistant_mod.CONFIG_WHITELIST:
+			if key in request.form:
+				update[key] = str(request.form[key])
+		if update:
+			client.update_config(session['userid'], {assistant: update})
+	return redirect(url_for('config'))
 
 
 @app.route('/logout', methods=['POST'])
@@ -81,12 +109,13 @@ def oauth_callback():
 		'sync_token': '*',
 		'resource_types': '["user"]',
 	}).json()
-	print(userinfo)
 	userid = userinfo['user']['id']
 	with Client() as client:
 		if not client.account_exists(userid):
 			return fail('Account is not known. Ask the admin to add your userid: ' + str(userid))
-		client.set_token(userid, token)
+		res = client.set_token(userid, token)
+		if res != 'ok':
+			return fail('Setting token failed: ' + res)
 	session['userid'] = userid
 	return redirect(url_for('config'))
 

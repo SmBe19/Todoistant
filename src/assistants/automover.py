@@ -1,8 +1,8 @@
 from datetime import datetime
 
-INIT_CONFIG = {
-	'enabled': True,
-}
+INIT_CONFIG = {}
+
+CONFIG_WHITELIST = []
 
 
 def should_run(api, timezone, cfg, tmp):

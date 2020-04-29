@@ -32,6 +32,7 @@ def enable_account(account, enabled, mgr):
 		if enabled and not cfg['token']:
 			return 'can only enable if token is set'
 		cfg['enabled'] = enabled
+	return 'ok'
 
 
 @handler
@@ -59,4 +60,34 @@ def set_enabled(account, assistant, enabled, mgr):
 		if assistant not in cfg:
 			cfg[assistant] = runner.ASSISTANTS[assistant].INIT_CONFIG
 		cfg[assistant]['enabled'] = enabled
+	return 'ok'
+
+
+@handler
+def get_config(account, mgr):
+	if account not in mgr:
+		return None
+	with mgr.get(account) as (cfg, tmp):
+		cfg_dict = cfg.to_dict()
+		del cfg_dict['token']
+		return cfg_dict
+
+
+@handler
+def update_config(account, update, mgr):
+	if account not in mgr:
+		return None
+
+	def do_update(cfg, upd):
+		for key in upd:
+			if key not in cfg:
+				cfg[key] = upd
+			elif isinstance(upd[key], dict):
+				do_update(cfg[key], upd[key])
+			else:
+				cfg[key] = upd[key]
+
+	with mgr.get(account) as (cfg, tmp):
+		do_update(cfg, update)
+
 	return 'ok'

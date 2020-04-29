@@ -2,6 +2,46 @@
 {% block title %}Config{% endblock %}
 {% block content %}
 <h1>Todoistant Configuration</h1>
+<h2>Auto-Move</h2>
+<div>Automatically move items that are overdue to the next day. Mark items that should be moved with a '@automove' label.</div>
+<div>
+    {% if not config.automover or not config.automover.enabled %}
+    <div>
+        <form action="{{ url_for('update_config', assistant='automover') }}" method="post">
+            <input type="hidden" name="enabled" value="true"/>
+            <button type="submit">Enable</button>
+        </form>
+    </div>
+    {% else %}
+    <div>Last Run: {{ config.automover.last_run|format_datetime }}</div>
+    <div>
+        <form action="{{ url_for('update_config', assistant='automover') }}" method="post">
+            <input type="hidden" name="enabled" value="false"/>
+            <button type="submit">Disable</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+<h2>Prio-Sorter</h2>
+<div>Add a '@prio#' label to a task to assign it a certain priority (replace '#' by any positive or negative number). Today's tasks will be sorted by this priority every 15 minutes.</div>
+<div>
+    {% if not config.priosorter or not config.priosorter.enabled %}
+    <div>
+        <form action="{{ url_for('update_config', assistant='priosorter') }}" method="post">
+            <input type="hidden" name="enabled" value="true"/>
+            <button type="submit">Enable</button>
+        </form>
+    </div>
+    {% else %}
+    <div>Last Run: {{ config.priosorter.last_run|format_datetime }}</div>
+    <div>
+        <form action="{{ url_for('update_config', assistant='priosorter') }}" method="post">
+            <input type="hidden" name="enabled" value="false"/>
+            <button type="submit">Disable</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
 <div>
     <form action="{{ url_for('logout') }}" method="post">
         <button type="submit">Logout</button>

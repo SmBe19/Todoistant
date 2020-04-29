@@ -55,6 +55,15 @@ class ChangeDict:
 			value = ChangeDict(value, root=self._root)
 		self._data[key] = value
 
+	def to_dict(self):
+		res = {}
+		for key in self._data:
+			if isinstance(self._data[key], ChangeDict):
+				res[key] = self._data[key].to_dict()
+			else:
+				res[key] = self._data[key]
+		return res
+
 
 class Config:
 
