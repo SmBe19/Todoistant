@@ -46,7 +46,7 @@
     <div class="row">
         <div class="col-md-6 mb-3">
             <div class="mb-3">Add a '@prio#' label to a task to assign it a certain priority (replace '#' by any positive or negative number). Today's tasks will be sorted by this priority every 60 minutes.</div>
-            {% if config.automover %}
+            {% if config.priosorter %}
             <div>Last Run: {{ config.priosorter.last_run|format_datetime }}</div>
             {% endif %}
         </div>
