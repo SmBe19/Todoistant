@@ -1,50 +1,54 @@
 {% extends "base.html" %}
 {% block title %}Config{% endblock %}
 {% block content %}
-<h1>Todoistant Configuration</h1>
-<h2>Auto-Move</h2>
-<div>Automatically move items that are overdue to the next day. Mark items that should be moved with a '@automove' label.</div>
-<div>
-    {% if not config.automover or not config.automover.enabled %}
+<div class="d-md-flex align-items-center justify-content-between">
     <div>
-        <form action="{{ url_for('update_config', assistant='automover') }}" method="post">
-            <input type="hidden" name="enabled" value="true"/>
-            <button type="submit">Enable</button>
-        </form>
+        <h1>Todoistant</h1>
+        <div class="text-muted">Your assistant for <a href="https://todoist.com">Todoist.</a></div>
     </div>
-    {% else %}
-    <div>Last Run: {{ config.automover.last_run|format_datetime }}</div>
-    <div>
-        <form action="{{ url_for('update_config', assistant='automover') }}" method="post">
-            <input type="hidden" name="enabled" value="false"/>
-            <button type="submit">Disable</button>
+    <div class="d-flex align-items-center">
+        <form action="{{ url_for('logout') }}" method="post">
+            <button class="btn btn-sm btn-outline-secondary" type="submit">Logout</button>
         </form>
+        <div class="ml-3">
+            Hello {{ session.full_name }}.
+        </div>
+        <div class="ml-3">
+            <img style="height: 4em" src="{{ session.avatar }}" alt="avatar"/>
+        </div>
     </div>
-    {% endif %}
 </div>
-<h2>Prio-Sorter</h2>
-<div>Add a '@prio#' label to a task to assign it a certain priority (replace '#' by any positive or negative number). Today's tasks will be sorted by this priority every 15 minutes.</div>
+{% macro enable_disable(assistant) -%}
+{% set enabled = config[assistant] and config[assistant].enabled %}
 <div>
-    {% if not config.priosorter or not config.priosorter.enabled %}
-    <div>
-        <form action="{{ url_for('update_config', assistant='priosorter') }}" method="post">
-            <input type="hidden" name="enabled" value="true"/>
-            <button type="submit">Enable</button>
-        </form>
-    </div>
-    {% else %}
-    <div>Last Run: {{ config.priosorter.last_run|format_datetime }}</div>
-    <div>
-        <form action="{{ url_for('update_config', assistant='priosorter') }}" method="post">
-            <input type="hidden" name="enabled" value="false"/>
-            <button type="submit">Disable</button>
-        </form>
-    </div>
-    {% endif %}
-</div>
-<div>
-    <form action="{{ url_for('logout') }}" method="post">
-        <button type="submit">Logout</button>
+    <form action="{{ url_for('update_config', assistant=assistant) }}" method="post">
+        <input type="hidden" name="enabled" value="{{ 'false' if enabled else 'true' }}"/>
+        <button class="btn {{ 'btn-warning' if enabled else 'btn-primary' }}" type="submit">{{ 'Disable' if enabled else 'Enable' }}</button>
     </form>
+</div>
+{%- endmacro %}
+<div class="my-5">
+    <h2>Auto-Move</h2>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <div class="mb-3">Automatically move items that are overdue to the next day. Mark items that should be moved with a '@automove' label.</div>
+            <div>Last Run: {{ config.automover.last_run|format_datetime }}</div>
+        </div>
+        <div class="col-md-6">
+            {{ enable_disable('automover') }}
+        </div>
+    </div>
+</div>
+<div class="my-5">
+    <h2>Prio-Sorter</h2>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <div class="mb-3">Add a '@prio#' label to a task to assign it a certain priority (replace '#' by any positive or negative number). Today's tasks will be sorted by this priority every 60 minutes.</div>
+            <div>Last Run: {{ config.priosorter.last_run|format_datetime }}</div>
+        </div>
+        <div class="col-md-6">
+            {{ enable_disable('priosorter') }}
+        </div>
+    </div>
 </div>
 {% endblock %}

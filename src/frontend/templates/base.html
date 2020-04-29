@@ -5,22 +5,25 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>{% block title %}{% endblock %} - Todoistant</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
 </head>
 <body>
-{% with messages = get_flashed_messages() %}
-{% if messages %}
-<div id="messages">
-    {% for message in messages %}
-    <div class="message">{{ message }}</div>
-    {% endfor %}
-</div>
-{% endif %}
-{% endwith %}
-<div id="content_root">
+<div class="container mt-4">
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <div>
+        {% for message in messages %}
+        <div class="alert alert-danger my-4">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
     {% block content %}{% endblock %}
 </div>
-<div id="footer">
-    <small>not created by, affiliated with, or supported by Doist</small>
-</div>
+<footer class="footer">
+    <div class="container">
+        <small class="text-muted">© {{ now.year }} Benjamin Schmid • <a href="https://smeanox.com">smeanox</a> • Todoistant is not created by, affiliated with, or supported by Doist</small>
+    </div>
+</footer>
 </body>
 </html>

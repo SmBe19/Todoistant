@@ -1,11 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Welcome{% endblock %}
 {% block content %}
-<h1>Welcome to Todoistant</h1>
-<div>Your assistant for Todoist.</div>
-<div>
-    <form action="{{ url_for('oauth_redirect') }}" method="get">
-        <button type="submit">Login</button>
-    </form>
+<div class="jumbotron">
+    <h1 class="display-4">Welcome to Todoistant</h1>
+    <div>Your assistant for <a href="https://todoist.com">Todoist.</a></div>
+    <hr class="my-4"/>
+    <div>
+        <form action="{{ url_for('oauth_redirect') }}" method="get">
+            <button class="btn btn-primary" type="submit">Login</button>
+        </form>
+    </div>
 </div>
 {% endblock %}

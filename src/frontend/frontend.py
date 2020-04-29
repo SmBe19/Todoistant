@@ -3,6 +3,7 @@
 import base64
 import os
 import sys
+import datetime
 
 import dotenv
 import requests
@@ -27,7 +28,19 @@ assert 'CLIENT_SECRET' in os.environ
 def format_datetime(value, format='%d.%m.%Y %H:%M:%S'):
 	if not value:
 		return '-'
-	return value.strftime(format)
+	timezone = datetime.timezone(
+		datetime.timedelta(
+			hours=session['timezone']['hours'],
+			minutes=session['timezone']['minutes']
+		),
+		session['timezone']['timezone']
+	)
+	return value.replace(tzinfo=datetime.timezone.utc).astimezone(timezone).strftime(format)
+
+
+@app.context_processor
+def inject_now():
+	return {'now': datetime.datetime.utcnow()}
 
 
 @app.route('/')
@@ -108,8 +121,8 @@ def oauth_callback():
 		'token': token,
 		'sync_token': '*',
 		'resource_types': '["user"]',
-	}).json()
-	userid = userinfo['user']['id']
+	}).json()['user']
+	userid = userinfo['id']
 	with Client() as client:
 		if not client.account_exists(userid):
 			return fail('Account is not known. Ask the admin to add your userid: ' + str(userid))
@@ -117,6 +130,9 @@ def oauth_callback():
 		if res != 'ok':
 			return fail('Setting token failed: ' + res)
 	session['userid'] = userid
+	session['full_name'] = userinfo['full_name']
+	session['avatar'] = userinfo['avatar_big']
+	session['timezone'] = userinfo['tz_info']
 	return redirect(url_for('config'))
 
 
