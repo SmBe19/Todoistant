@@ -14,7 +14,7 @@ sys.path.append(os.path.abspath('src'))
 from client import Client
 import runner
 
-os.chdir(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+os.chdir(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 dotenv.load_dotenv('secrets.env')
 
 app = Flask(__name__)
