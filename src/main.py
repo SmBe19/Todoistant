@@ -1,26 +1,27 @@
 #!/usr/bin/env python3
-import datetime
+import argparse
 import os
 
 import dotenv
-import todoist
 
-import automover
-import priosorter
+import client
+import server
 
 os.chdir(os.path.dirname(os.path.dirname(__file__)))
 dotenv.load_dotenv('secrets.env')
 
 
 def main():
-    if not os.path.isdir('cache'):
-        os.mkdir('cache')
-    api = todoist.TodoistAPI(os.environ['TODOIST_TOKEN'], cache='./cache/')
-    api.sync()
-    tz_info = api.state['user']['tz_info']
-    timezone = datetime.timezone(datetime.timedelta(hours=tz_info['hours'], minutes=tz_info['minutes']), tz_info['timezone'])
-    automover.auto_move(api, timezone)
-    priosorter.sort_prios(api, timezone)
+    parser = argparse.ArgumentParser(description='Manage Todoistant')
+    subparsers = parser.add_subparsers(dest='command')
+    server.prepare_parser(subparsers)
+    client.prepare_parser(subparsers)
+
+    args = parser.parse_args()
+    if 'func' in args:
+        args.func(args)
+    else:
+        parser.print_usage()
 
 
 if __name__ == '__main__':

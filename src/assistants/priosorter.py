@@ -18,8 +18,6 @@ def _sort_key(prio_labels):
 
 
 def sort_prios(api: todoist.TodoistAPI, timezone):
-	api.sync()
-
 	prio_labels = {}
 	for label in api.state['labels']:
 		if label['name'].startswith('prio'):

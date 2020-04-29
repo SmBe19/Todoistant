@@ -2,7 +2,6 @@ from datetime import datetime
 
 
 def auto_move(api, timezone):
-	api.sync()
 	automove_label = None
 	for label in api.state['labels']:
 		if label['name'] == 'automove':
