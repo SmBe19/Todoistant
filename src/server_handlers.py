@@ -20,6 +20,11 @@ def add_account(account, mgr):
 
 
 @handler
+def account_exists(account, mgr):
+	return account in mgr
+
+
+@handler
 def enable_account(account, enabled, mgr):
 	if account not in mgr:
 		return 'unknown account'

@@ -1,8 +1,8 @@
 import argparse
 import getpass
-import json
 import socket
 
+import my_json
 import runner
 from consts import SOCKET_NAME
 
@@ -30,24 +30,24 @@ def prepare_parser(subparsers: argparse._SubParsersAction):
 
 
 def run_add_account(args):
-	client = Client()
-	print(client.add_account(args.account))
+	with Client() as client:
+		print(client.add_account(args.account))
 
 
 def run_enable_account(args):
-	client = Client()
-	print(client.enable_account(args.account, args.enabled == 'true'))
+	with Client() as client:
+		print(client.enable_account(args.account, args.enabled == 'true'))
 
 
 def run_set_token(args):
-	client = Client()
 	token = args.token or getpass.getpass('Token: ')
-	print(client.set_token(args.account, token))
+	with Client() as client:
+		print(client.set_token(args.account, token))
 
 
 def run_set_enable(args):
-	client = Client()
-	print(client.set_enabled(args.account, args.assistant, args.enabled == 'true'))
+	with Client() as client:
+		print(client.set_enabled(args.account, args.assistant, args.enabled == 'true'))
 
 
 class Client:
@@ -63,6 +63,12 @@ class Client:
 		self.wfile.close()
 		self.socket.close()
 
+	def __enter__(self):
+		return self
+
+	def __exit__(self, exc_type, exc_val, exc_tb):
+		self.close()
+
 	def __getattr__(self, item):
 		def func(*args, **kwargs):
 			call = {
@@ -70,7 +76,7 @@ class Client:
 				'args': args,
 				'kwargs': kwargs,
 			}
-			self.wfile.write((json.dumps(call) + '\n').encode())
+			self.wfile.write((my_json.dumps(call) + '\n').encode())
 			self.wfile.flush()
-			return json.loads(self.rfile.readline().decode())
+			return my_json.loads(self.rfile.readline().decode())
 		return func

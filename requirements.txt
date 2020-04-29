@@ -2,3 +2,4 @@ todoist-python
 python-dotenv
 flask
 gunicorn
+requests

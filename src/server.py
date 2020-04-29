@@ -1,9 +1,9 @@
-import json
 import os
 import socketserver
 import threading
 import time
 
+import my_json
 import runner
 import server_handlers
 import todoist_api
@@ -20,13 +20,13 @@ class RequestHandler(socketserver.StreamRequestHandler):
 			if not line:
 				continue
 			try:
-				data = json.loads(line.strip())
+				data = my_json.loads(line.strip())
 			except ValueError as e:
 				print('Invalid Request', e)
 				continue
 			if data['cmd'] in server_handlers.handlers:
 				res = server_handlers.handlers[data['cmd']](*data.get('args', []), **data.get('kwargs', {}), mgr=config_manager)
-				self.wfile.write((json.dumps(res) + '\n').encode())
+				self.wfile.write((my_json.dumps(res) + '\n').encode())
 
 
 class ThreadingServer(socketserver.UnixStreamServer, socketserver.ThreadingMixIn):
@@ -47,7 +47,8 @@ def run_server(args):
 			account = config_manager.get(file[:-5])
 			account.load()
 			with account as (cfg, tmp):
-				tmp['api'], tmp['timezone'] = todoist_api.get_api(cfg['token'])
+				if cfg['enabled']:
+					tmp['api'], tmp['timezone'] = todoist_api.get_api(cfg['token'])
 	print('Config loaded')
 
 	print('Starting server...')

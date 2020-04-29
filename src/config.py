@@ -1,9 +1,8 @@
-import datetime
-import json
 import os
 import threading
 
-import server
+import my_json
+from consts import CONFIG_PATH
 
 
 class ConfigManager:
@@ -14,7 +13,7 @@ class ConfigManager:
 
 	def __contains__(self, item):
 		with self._lock:
-			return item in self._configs
+			return str(item) in self._configs
 
 	def __iter__(self):
 		return iter(self._configs.keys())
@@ -66,29 +65,16 @@ class Config:
 		self._tmpdata = {}
 
 	def load(self):
-		def json_object_hook(o):
-			if '__datetime__' in o:
-				return datetime.datetime.fromisoformat(o['value'])
-			return o
 
 		with self._lock:
-			with open(os.path.join(server.CONFIG_PATH, '{}.json'.format(self.key)), 'r') as f:
-				self._data = ChangeDict(json.load(f, object_hook=json_object_hook))
+			with open(os.path.join(CONFIG_PATH, '{}.json'.format(self.key)), 'r') as f:
+				self._data = ChangeDict(my_json.load(f))
 
 	def save(self):
-		def json_default(o):
-			if isinstance(o, ChangeDict):
-				return o._data
-			if isinstance(o, datetime.datetime):
-				return {
-					'__datetime__': True,
-					'value': o.isoformat()
-				}
-			raise TypeError
 
 		with self._lock:
-			with open(os.path.join(server.CONFIG_PATH, '{}.json'.format(self.key)), 'w') as f:
-				json.dump(self._data, f, default=json_default)
+			with open(os.path.join(CONFIG_PATH, '{}.json'.format(self.key)), 'w') as f:
+				my_json.dump(self._data, f)
 			self._data.changed = False
 
 	def __enter__(self):
