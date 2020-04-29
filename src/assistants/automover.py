@@ -1,7 +1,16 @@
 from datetime import datetime
 
+INIT_CONFIG = {
+	'enabled': True,
+}
 
-def auto_move(api, timezone):
+
+def should_run(api, timezone, cfg, tmp):
+	return 'last_run' not in cfg or cfg['last_run'].date() != datetime.utcnow().date()
+
+
+def run(api, timezone, cfg, tmp):
+	cfg['last_run'] = datetime.utcnow()
 	automove_label = None
 	for label in api.state['labels']:
 		if label['name'] == 'automove':

@@ -5,6 +5,8 @@ import threading
 import time
 
 import server_handlers
+import runner
+import todoist_api
 from config import ConfigManager
 
 SOCKET_NAME = 'todoistant.sock'
@@ -51,15 +53,25 @@ def run_server(args):
 	print('Load config...')
 	for file in os.listdir(CONFIG_PATH):
 		if file.endswith('.json'):
-			config_manager.get_config(file[:-5]).load()
+			account = config_manager.get(file[:-5])
+			account.load()
+			with account as (cfg, tmp):
+				tmp['api'], tmp['timezone'] = todoist_api.get_api(cfg['token'])
 	print('Config loaded')
 
 	print('Starting server...')
 	server = ThreadingServer(SOCKET_NAME, RequestHandler)
-	thread = threading.Thread(target=server.serve_forever)
-	thread.daemon = True
-	thread.start()
+	server_thread = threading.Thread(target=server.serve_forever)
+	server_thread.daemon = True
+	server_thread.start()
 	print('Server started')
+
+	print('Starting runner...')
+	my_runner = runner.Runner(config_manager)
+	runner_thread = threading.Thread(target=my_runner.run_forever)
+	runner_thread.daemon = True
+	runner_thread.start()
+	print('Runner started')
 
 	try:
 		while True:
@@ -68,3 +80,6 @@ def run_server(args):
 		print('Shutting down server...')
 		server.shutdown()
 		print('Server shutdown')
+		print('Shutting down runner...')
+		my_runner.shutdown()
+		print('Runner shutdown')

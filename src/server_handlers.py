@@ -1,5 +1,8 @@
 import todoist
 
+import runner
+import todoist_api
+
 handlers = {}
 
 
@@ -11,10 +14,24 @@ def handler(f):
 @handler
 def add_account(token, mgr):
 	print('Add Account')
-	api = todoist.TodoistAPI(token)
-	api.sync()
+	api, timezone = todoist_api.get_api(token)
 	if not api.state['user']:
 		return 'bad token'
-	with mgr.get(api.state['user']['id']) as cfg:
+	with mgr.get(api.state['user']['id']) as (cfg, tmp):
 		cfg['token'] = token
+		tmp['api'] = api
+		tmp['timezone'] = timezone
 	return 'account added'
+
+
+@handler
+def set_enabled(account, assistant, enabled, mgr):
+	if assistant not in runner.ASSISTANTS:
+		return 'unknown assistant'
+	if account not in mgr:
+		return 'unknown account'
+	with mgr.get(account) as (cfg, tmp):
+		if assistant not in cfg:
+			cfg[assistant] = runner.ASSISTANTS[assistant].INIT_CONFIG
+		cfg[assistant]['enabled'] = enabled
+	return 'ok'

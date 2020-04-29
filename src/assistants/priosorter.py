@@ -1,6 +1,12 @@
 from datetime import datetime, timedelta
 
-import todoist
+INIT_CONFIG = {
+	'enabled': True,
+}
+
+
+def should_run(api, timezone, cfg, tmp):
+	return 'last_run' not in cfg or (datetime.utcnow() - cfg['last_run']) > timedelta(hours=1)
 
 
 def _sort_key(prio_labels):
@@ -17,7 +23,8 @@ def _sort_key(prio_labels):
 	return _func
 
 
-def sort_prios(api: todoist.TodoistAPI, timezone):
+def run(api, timezone, cfg, tmp):
+	cfg['last_run'] = datetime.utcnow()
 	prio_labels = {}
 	for label in api.state['labels']:
 		if label['name'].startswith('prio'):
