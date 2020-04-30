@@ -2,7 +2,13 @@ from datetime import datetime, timedelta
 
 INIT_CONFIG = {}
 
+CONFIG_VERSION = 1
+
 CONFIG_WHITELIST = []
+
+
+def migrate_config(cfg, old_version):
+	pass
 
 
 def should_run(api, timezone, cfg, tmp):
@@ -24,7 +30,6 @@ def _sort_key(prio_labels):
 
 
 def run(api, timezone, cfg, tmp):
-	cfg['last_run'] = datetime.utcnow()
 	prio_labels = {}
 	for label in api.state['labels']:
 		if label['name'].startswith('prio'):

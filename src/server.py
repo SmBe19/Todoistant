@@ -3,12 +3,17 @@ import socketserver
 import threading
 import time
 
+import dotenv
+
 import my_json
 import runner
 import server_handlers
+import telegram
 import todoist_api
 from config import ConfigManager
 from consts import SOCKET_NAME, CACHE_PATH, CONFIG_PATH
+
+dotenv.load_dotenv('secrets.env')
 
 config_manager = ConfigManager()
 
@@ -49,6 +54,12 @@ def run_server(args):
 			with account as (cfg, tmp):
 				if cfg['enabled']:
 					tmp['api'], tmp['timezone'] = todoist_api.get_api(cfg['token'])
+				for assistant in runner.ASSISTANTS:
+					assist = runner.ASSISTANTS[assistant]
+					if assistant in cfg and cfg[assistant]['config_version'] < assist.CONFIG_VERSION:
+						assist.migrate_config(cfg[assistant], cfg[assistant]['config_version'])
+						cfg[assistant]['config_version'] = assist.CONFIG_VERSION
+
 	print('Config loaded')
 
 	print('Starting server...')
@@ -65,13 +76,31 @@ def run_server(args):
 	runner_thread.start()
 	print('Runner started')
 
+	print('Starting telegram...')
+	my_telegram = telegram.Telegram(config_manager)
+	for account in config_manager:
+		with config_manager.get(account) as (cfg, tmp):
+			if 'telegram' in cfg and cfg['telegram']['chat_id'] > 0:
+				my_telegram.chat_to_user[cfg['telegram']['chat_id']] = account
+	telegram_thread = threading.Thread(target=my_telegram.run_forever)
+	telegram_thread.daemon = True
+	telegram_thread.start()
+	with config_manager.get('telegram') as (cfg, tmp):
+		tmp['telegram'] = my_telegram
+	print('Telegram started')
+
 	try:
 		while True:
 			time.sleep(64)
 	except KeyboardInterrupt:
-		print('Shutting down server...')
-		server.shutdown()
-		print('Server shutdown')
+		pass
+	finally:
+		print('Shutting down telegram...')
+		my_telegram.shutdown()
+		print('Telegram shutdown')
 		print('Shutting down runner...')
 		my_runner.shutdown()
 		print('Runner shutdown')
+		print('Shutting down server...')
+		server.shutdown()
+		print('Server shutdown')

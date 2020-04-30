@@ -59,6 +59,7 @@ def set_enabled(account, assistant, enabled, mgr):
 	with mgr.get(account) as (cfg, tmp):
 		if assistant not in cfg:
 			cfg[assistant] = runner.ASSISTANTS[assistant].INIT_CONFIG
+			cfg[assistant]['config_version'] = runner.ASSISTANTS[assistant].CONFIG_VERSION
 		cfg[assistant]['enabled'] = enabled
 	return 'ok'
 
@@ -76,7 +77,7 @@ def get_config(account, mgr):
 @handler
 def update_config(account, update, mgr):
 	if account not in mgr:
-		return None
+		return 'unknown account'
 
 	def do_update(cfg, upd):
 		for key in upd:
@@ -91,3 +92,29 @@ def update_config(account, update, mgr):
 		do_update(cfg, update)
 
 	return 'ok'
+
+
+@handler
+def telegram_update(token, update, mgr):
+	with mgr.get('telegram') as (cfg, tmp):
+		tmp['telegram'].receive(token, update)
+	return 'ok'
+
+
+@handler
+def telegram_disconnect(account, mgr):
+	if account not in mgr:
+		return 'unknown account'
+
+	with mgr.get(account) as (cfg, tmp):
+		with mgr.get('telegram') as (tcfg, ttmp):
+			ttmp['telegram'].send_message(cfg['telegram']['chat_id'], 'Account was disconnected.')
+		cfg['telegram']['chat_id'] = 0
+		cfg['telegram']['username'] = ''
+	return 'ok'
+
+
+@handler
+def telegram_connect(account, code, mgr):
+	with mgr.get('telegram') as (cfg, tmp):
+		return tmp['telegram'].finish_register(account, code)

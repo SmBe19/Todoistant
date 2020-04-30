@@ -19,7 +19,7 @@
     </div>
 </div>
 {% macro enable_disable(assistant) -%}
-{% set enabled = config[assistant] and config[assistant].enabled %}
+{% set enabled = enabled[assistant] %}
 <div>
     <form action="{{ url_for('update_config', assistant=assistant) }}" method="post">
         <input type="hidden" name="enabled" value="{{ 'false' if enabled else 'true' }}"/>
@@ -52,6 +52,37 @@
         </div>
         <div class="col-md-6">
             {{ enable_disable('priosorter') }}
+        </div>
+    </div>
+</div>
+<div class="my-5">
+    <h2>Telegram Bot</h2>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <div class="mb-3">Connect with <a href="https://t.me/todoistant_bot">@todoistant_bot</a> on Telegram. All messages sent to it will be added as tasks. You can set different projects and labels depending on whether the message was forwarded, contains a link, or is a plain message.</div>
+            {% if enabled.telegram %}
+            {% if config.telegram.chat_id > 0 %}
+            <div class="mt-3">Your account is connected with the Telegram account {{ config.telegram.username }}.</div>
+            <div class="mt-3">
+                <form action="{{ url_for('telegram_disconnect') }}" method="post">
+                    <button class="btn btn-sm btn-warning" type="submit">Disconnect</button>
+                </form>
+            </div>
+            {% else %}
+            <div class="mt-3">
+                Connect your Telegram account by sending <b>/register {{ session.userid }}</b> to <a href="https://t.me/todoistant_bot">@todoistant_bot</a>.
+            </div>
+            <div class="mt-3">
+                <form class="form-inline" action="{{ url_for('telegram_connect') }}" method="post">
+                    <input class="form-control" type="text" name="code" placeholder="Code" title="Code" />
+                    <button class="btn btn-warning ml-2" type="submit">Connect</button>
+                </form>
+            </div>
+            {% endif %}
+            {% endif %}
+        </div>
+        <div class="col-md-6">
+            {{ enable_disable('telegram') }}
         </div>
     </div>
 </div>

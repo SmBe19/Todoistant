@@ -2,7 +2,13 @@ from datetime import datetime
 
 INIT_CONFIG = {}
 
+CONFIG_VERSION = 1
+
 CONFIG_WHITELIST = []
+
+
+def migrate_config(cfg, old_version):
+	pass
 
 
 def should_run(api, timezone, cfg, tmp):
@@ -10,7 +16,6 @@ def should_run(api, timezone, cfg, tmp):
 
 
 def run(api, timezone, cfg, tmp):
-	cfg['last_run'] = datetime.utcnow()
 	automove_label = None
 	for label in api.state['labels']:
 		if label['name'] == 'automove':

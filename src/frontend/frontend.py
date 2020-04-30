@@ -56,13 +56,19 @@ def index():
 @app.route('/config')
 def config():
 	if 'userid' not in session:
-		return redirect(url_for('config'))
+		return redirect(url_for('index'))
 	with Client() as client:
-		return render_template('config.html', config=client.get_config(session['userid']))
+		current_config = client.get_config(session['userid'])
+		enabled = {}
+		for assistant in runner.ASSISTANTS:
+			enabled[assistant] = assistant in current_config and current_config[assistant]['enabled']
+		return render_template('config.html', config=current_config, enabled=enabled)
 
 
 @app.route('/config/update/<assistant>', methods=['POST'])
 def update_config(assistant):
+	if 'userid' not in session:
+		return redirect(url_for('index'))
 	if assistant not in runner.ASSISTANTS:
 		flash('Unknown assistant ' + assistant)
 		return redirect(url_for('config'))
@@ -77,6 +83,28 @@ def update_config(assistant):
 				update[key] = str(request.form[key])
 		if update:
 			client.update_config(session['userid'], {assistant: update})
+	return redirect(url_for('config'))
+
+
+@app.route('/config/telegram_disconnect', methods=['POST'])
+def telegram_disconnect():
+	if 'userid' not in session:
+		return redirect(url_for('index'))
+	with Client() as client:
+		client.telegram_disconnect(session['userid'])
+	return redirect(url_for('config'))
+
+
+@app.route('/config/telegram_connect', methods=['POST'])
+def telegram_connect():
+	if 'userid' not in session:
+		return redirect(url_for('index'))
+	if 'code' not in request.form:
+		return redirect(url_for('config'))
+	with Client() as client:
+		res = client.telegram_connect(session['userid'], request.form['code'])
+		if res != 'ok':
+			flash('Connecting Telegram account failed: ' + res)
 	return redirect(url_for('config'))
 
 
@@ -152,6 +180,13 @@ def oauth_callback():
 	session['avatar'] = userinfo['avatar_big']
 	session['timezone'] = userinfo['tz_info']
 	return redirect(url_for('config'))
+
+
+@app.route('/telegram/<token>', methods=['POST'])
+def telegram(token):
+	with Client() as client:
+		client.telegram_update(token, request.json)
+	return ''
 
 
 if __name__ == '__main__':

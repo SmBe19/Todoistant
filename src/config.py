@@ -46,6 +46,11 @@ class ChangeDict:
 			raise RuntimeError()
 		return self._data[item]
 
+	def get(self, item, default=None):
+		if not self._root._valid:
+			raise RuntimeError()
+		return self._data.get(item, default)
+
 	def __setitem__(self, key, value):
 		if not self._root._valid:
 			raise RuntimeError()
@@ -74,13 +79,11 @@ class Config:
 		self._tmpdata = {}
 
 	def load(self):
-
 		with self._lock:
 			with open(os.path.join(CONFIG_PATH, '{}.json'.format(self.key)), 'r') as f:
 				self._data = ChangeDict(my_json.load(f))
 
 	def save(self):
-
 		with self._lock:
 			with open(os.path.join(CONFIG_PATH, '{}.json'.format(self.key)), 'w') as f:
 				my_json.dump(self._data, f)
