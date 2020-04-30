@@ -11,6 +11,7 @@ from flask import Flask, render_template, session, redirect, url_for, request, f
 
 sys.path.append(os.path.abspath('src'))
 
+from utils import utc_to_local
 from client import Client
 import runner
 
@@ -35,7 +36,7 @@ def format_datetime(value, format='%d.%m.%Y %H:%M:%S'):
 		),
 		session['timezone']['timezone']
 	)
-	return value.replace(tzinfo=datetime.timezone.utc).astimezone(timezone).strftime(format)
+	return utc_to_local(value, timezone).strftime(format)
 
 
 @app.template_test()

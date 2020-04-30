@@ -12,7 +12,7 @@ def migrate_config(cfg, old_version):
 
 
 def should_run(api, timezone, cfg, tmp):
-	return 'last_run' not in cfg or (datetime.utcnow() - cfg['last_run']) > timedelta(hours=1)
+	return 'last_run' not in cfg or (datetime.utcnow() - cfg['last_run']) > timedelta(minutes=15)
 
 
 def _sort_key(prio_labels):
@@ -29,7 +29,7 @@ def _sort_key(prio_labels):
 	return _func
 
 
-def run(api, timezone, cfg, tmp):
+def run(api, timezone, telegram, cfg, tmp):
 	prio_labels = {}
 	for label in api.state['labels']:
 		if label['name'].startswith('prio'):
@@ -42,7 +42,7 @@ def run(api, timezone, cfg, tmp):
 	now = datetime.now(timezone)
 	items = []
 	for item in api.state['items']:
-		if not item['due'] or ('date_completed' in item and item['date_completed']):
+		if not item['due'] or item['date_completed']:
 			continue
 		due = datetime.strptime(item['due']['date'].split('T')[0], '%Y-%m-%d')
 		if now.date() == due.date():

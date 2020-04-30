@@ -31,7 +31,7 @@
     <h2>Auto-Move</h2>
     <div class="row">
         <div class="col-md-6 mb-3">
-            <div class="mb-3">Automatically move items that are overdue to the next day. Mark items that should be moved with a '@automove' label.</div>
+            <div class="mb-3">Automatically move items that are overdue to the next day. Mark items that should be moved with a '@automove' label. Use the config key 'automove-by' to move an item by more than one day.</div>
             {% if config.automover %}
             <div>Last Run: {{ config.automover.last_run|format_datetime }}</div>
             {% endif %}
@@ -48,7 +48,7 @@
     <h2>Prio-Sorter</h2>
     <div class="row">
         <div class="col-md-6 mb-3">
-            <div class="mb-3">Add a '@prio#' label to a task to assign it a certain priority (replace '#' by any positive or negative number). Today's tasks will be sorted by this priority every 60 minutes.</div>
+            <div class="mb-3">Add a '@prio#' label to a task to assign it a certain priority (replace '#' by any positive or negative number). Today's tasks will be sorted by this priority every 15 minutes.</div>
             {% if config.priosorter %}
             <div>Last Run: {{ config.priosorter.last_run|format_datetime }}</div>
             {% endif %}
@@ -65,9 +65,10 @@
     <h2>Telegram Bot</h2>
     <div class="row">
         <div class="col-md-6 mb-3">
-            <div class="mb-3">Connect with <a href="https://t.me/todoistant_bot">@todoistant_bot</a> on Telegram. All messages sent to it will be added as tasks. You can set different projects and labels depending on whether the message was forwarded, contains a link, or is a plain message.</div>
+            <div class="mb-3">Connect with <a href="https://t.me/todoistant_bot">@todoistant_bot</a> on Telegram. All messages sent to it will be added as tasks. You can set different projects and labels depending on whether the message was forwarded, contains a link, or is a plain message.<br/>Mark a message with the @telegram label to receive a message when the task is due. You can use a different due date by using the config key 'telegram-due' with a time (HH:MM) or an ISO datetime (YYYY-mm-ddTHH:MM).</div>
             {% if enabled.telegram %}
-            {% if config.telegram.chat_id > 0 %}
+            {% if config.telegram.chatid > 0 %}
+            <div class="mt-3">Last Run: {{ config.telegram.last_run|format_datetime }}</div>
             <div class="mt-3">Your account is connected with the Telegram account {{ config.telegram.username }}.</div>
             <div class="mt-3">
                 <form action="{{ url_for('telegram_disconnect') }}" method="post">
@@ -89,6 +90,9 @@
         </div>
         <div class="col-md-6">
             {{ enable_disable('telegram') }}
+            <div class="mt-3">
+                {{ '@telegram found' if 'telegram' in labels|map(attribute='name') else '@telegram not found' }}
+            </div>
             {% macro message_config(kind, title) -%}
             <div class="mt-3">
                 <form action="{{ url_for('update_config', assistant='telegram') }}" method="post">
@@ -121,6 +125,14 @@
             {{ message_config('link', 'Link Message') }}
             {{ message_config('forward', 'Forward Message') }}
             {% endif %}
+        </div>
+    </div>
+</div>
+<div class="mt-5">
+    <h2>Todoistant Config</h2>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            Some assistants can be configured further by adding an invisible link: <i>[ ](key: value, key: value)</i>. See the documentation for a given assistant to learn the supported keys.
         </div>
     </div>
 </div>

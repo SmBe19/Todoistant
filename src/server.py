@@ -71,19 +71,12 @@ def run_server(args):
 	server_thread.start()
 	print('Server started')
 
-	print('Starting runner...')
-	my_runner = runner.Runner(config_manager)
-	runner_thread = threading.Thread(target=my_runner.run_forever)
-	runner_thread.daemon = True
-	runner_thread.start()
-	print('Runner started')
-
 	print('Starting telegram...')
 	my_telegram = telegram.Telegram(config_manager)
 	for account in config_manager:
 		with config_manager.get(account) as (cfg, tmp):
-			if 'telegram' in cfg and cfg['telegram']['chat_id'] > 0:
-				my_telegram.chat_to_user[cfg['telegram']['chat_id']] = account
+			if 'telegram' in cfg and cfg['telegram']['chatid'] > 0:
+				my_telegram.chat_to_user[cfg['telegram']['chatid']] = account
 	telegram_thread = threading.Thread(target=my_telegram.run_forever)
 	telegram_thread.daemon = True
 	telegram_thread.start()
@@ -91,18 +84,25 @@ def run_server(args):
 		tmp['telegram'] = my_telegram
 	print('Telegram started')
 
+	print('Starting runner...')
+	my_runner = runner.Runner(config_manager)
+	runner_thread = threading.Thread(target=my_runner.run_forever)
+	runner_thread.daemon = True
+	runner_thread.start()
+	print('Runner started')
+
 	try:
 		while True:
 			time.sleep(64)
 	except KeyboardInterrupt:
 		pass
 	finally:
-		print('Shutting down telegram...')
-		my_telegram.shutdown()
-		print('Telegram shutdown')
 		print('Shutting down runner...')
 		my_runner.shutdown()
 		print('Runner shutdown')
+		print('Shutting down telegram...')
+		my_telegram.shutdown()
+		print('Telegram shutdown')
 		print('Shutting down server...')
 		server.shutdown()
 		print('Server shutdown')

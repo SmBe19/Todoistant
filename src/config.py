@@ -16,7 +16,7 @@ class ConfigManager:
 			return str(item) in self._configs
 
 	def __iter__(self):
-		return iter(self._configs.keys())
+		return iter(list(self._configs.keys()))
 
 	def get(self, key):
 		with self._lock:

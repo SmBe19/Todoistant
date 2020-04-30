@@ -12,9 +12,14 @@ ASSISTANTS = {
 }
 
 
-def run_now(assistant, cfg, tmp):
+def run_now(assistant, cfg, tmp, mgr):
+	def send_message(message):
+		if cfg['telegram']['chatid'] <= 0:
+			return
+		with mgr.get('telegram') as (tcfg, ttmp):
+			ttmp['telegram'].send_message(cfg['telegram']['chatid'], message)
 	if assistant in cfg and cfg[assistant]['enabled']:
-		ASSISTANTS[assistant].run(tmp['api'], tmp['timezone'], cfg[assistant], tmp.setdefault(assistant, {}))
+		ASSISTANTS[assistant].run(tmp['api'], tmp['timezone'], send_message, cfg[assistant], tmp.setdefault(assistant, {}))
 		cfg[assistant]['last_run'] = datetime.datetime.utcnow()
 
 
@@ -41,10 +46,10 @@ class Runner:
 								if not api_synced:
 									tmp['api'].sync()
 								print('Run', assistant, 'for', account)
-								run_now(assistant, cfg, tmp)
+								run_now(assistant, cfg, tmp, self.config_manager)
 								print('Finished', assistant, 'for', account)
 
-			self.should_shutdown.wait(60)
+			self.should_shutdown.wait(37)
 
 	def shutdown(self):
 		self.should_shutdown.set()

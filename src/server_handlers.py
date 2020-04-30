@@ -137,9 +137,9 @@ def telegram_disconnect(account, mgr):
 
 	with mgr.get(account) as (cfg, tmp):
 		with mgr.get('telegram') as (tcfg, ttmp):
-			ttmp['telegram'].send_message(cfg['telegram']['chat_id'], 'Account was disconnected.')
-			del ttmp['telegram'].chat_to_user[cfg['telegram']['chat_id']]
-		cfg['telegram']['chat_id'] = 0
+			ttmp['telegram'].send_message(cfg['telegram']['chatid'], 'Account was disconnected.')
+			del ttmp['telegram'].chat_to_user[cfg['telegram']['chatid']]
+		cfg['telegram']['chatid'] = 0
 		cfg['telegram']['username'] = ''
 	return 'ok'
 

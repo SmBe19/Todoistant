@@ -127,7 +127,7 @@ class Telegram:
 				new_task.update(labels=cfg['telegram'][kind + '_labels'][:])
 				new_task.update(due={'string': 'today'})
 				tmp['api'].commit()
-				runner.run_now('priosorter', cfg, tmp)
+				runner.run_now('priosorter', cfg, tmp, self.config_manager)
 				tmp['telegram_last_task'] = new_task
 				self.reply(message, 'Added task.')
 
@@ -245,7 +245,7 @@ class Telegram:
 		if (datetime.utcnow() - timestamp) > timedelta(minutes=15):
 			return 'expired code'
 		with self.config_manager.get(userid) as (cfg, tmp):
-			cfg['telegram']['chat_id'] = chatid
+			cfg['telegram']['chatid'] = chatid
 			cfg['telegram']['username'] = username
 		self.chat_to_user[chatid] = userid
 		with self.new_update:
