@@ -1,3 +1,4 @@
+import datetime
 import os
 import socketserver
 import threading
@@ -54,6 +55,7 @@ def run_server(args):
 			with account as (cfg, tmp):
 				if cfg['enabled']:
 					tmp['api'], tmp['timezone'] = todoist_api.get_api(cfg['token'])
+					tmp['api_last_sync'] = datetime.datetime.utcnow()
 				for assistant in runner.ASSISTANTS:
 					assist = runner.ASSISTANTS[assistant]
 					if assistant in cfg and cfg[assistant]['config_version'] < assist.CONFIG_VERSION:

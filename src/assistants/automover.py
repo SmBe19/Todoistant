@@ -1,10 +1,10 @@
 from datetime import datetime
 
 INIT_CONFIG = {}
-
 CONFIG_VERSION = 1
-
 CONFIG_WHITELIST = []
+CONFIG_INT = []
+CONFIG_LIST = []
 
 
 def migrate_config(cfg, old_version):

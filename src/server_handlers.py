@@ -1,3 +1,5 @@
+import datetime
+
 import todoist
 
 import runner
@@ -47,6 +49,7 @@ def set_token(account, token, mgr):
 		cfg['token'] = token
 		tmp['api'] = api
 		tmp['timezone'] = timezone
+		tmp['api_last_sync'] = datetime.datetime.utcnow()
 	return 'ok'
 
 
@@ -82,7 +85,7 @@ def update_config(account, update, mgr):
 	def do_update(cfg, upd):
 		for key in upd:
 			if key not in cfg:
-				cfg[key] = upd
+				cfg[key] = upd[key]
 			elif isinstance(upd[key], dict):
 				do_update(cfg[key], upd[key])
 			else:
@@ -92,6 +95,32 @@ def update_config(account, update, mgr):
 		do_update(cfg, update)
 
 	return 'ok'
+
+
+@handler
+def get_projects(account, mgr):
+	if account not in mgr:
+		return None
+	with mgr.get(account) as (cfg, tmp):
+		if datetime.datetime.utcnow() - tmp['api_last_sync'] > datetime.timedelta(minutes=10):
+			tmp['api'].sync()
+		return [{
+			'name': project['name'],
+			'id': project['id'],
+		} for project in tmp['api'].state['projects']]
+
+
+@handler
+def get_labels(account, mgr):
+	if account not in mgr:
+		return None
+	with mgr.get(account) as (cfg, tmp):
+		if datetime.datetime.utcnow() - tmp['api_last_sync'] > datetime.timedelta(minutes=10):
+			tmp['api'].sync()
+		return [{
+			'name': project['name'],
+			'id': project['id'],
+		} for project in tmp['api'].state['labels']]
 
 
 @handler
@@ -109,6 +138,7 @@ def telegram_disconnect(account, mgr):
 	with mgr.get(account) as (cfg, tmp):
 		with mgr.get('telegram') as (tcfg, ttmp):
 			ttmp['telegram'].send_message(cfg['telegram']['chat_id'], 'Account was disconnected.')
+			del ttmp['telegram'].chat_to_user[cfg['telegram']['chat_id']]
 		cfg['telegram']['chat_id'] = 0
 		cfg['telegram']['username'] = ''
 	return 'ok'

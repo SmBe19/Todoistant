@@ -38,6 +38,11 @@ def format_datetime(value, format='%d.%m.%Y %H:%M:%S'):
 	return value.replace(tzinfo=datetime.timezone.utc).astimezone(timezone).strftime(format)
 
 
+@app.template_test()
+def prio_label(value):
+	return value.startswith('prio')
+
+
 @app.context_processor
 def inject_now():
 	return {
@@ -62,7 +67,9 @@ def config():
 		enabled = {}
 		for assistant in runner.ASSISTANTS:
 			enabled[assistant] = assistant in current_config and current_config[assistant]['enabled']
-		return render_template('config.html', config=current_config, enabled=enabled)
+		projects = client.get_projects(session['userid'])
+		labels = client.get_labels(session['userid'])
+		return render_template('config.html', config=current_config, enabled=enabled, projects=projects, labels=labels)
 
 
 @app.route('/config/update/<assistant>', methods=['POST'])
@@ -80,7 +87,11 @@ def update_config(assistant):
 		update = {}
 		for key in assistant_mod.CONFIG_WHITELIST:
 			if key in request.form:
-				update[key] = str(request.form[key])
+				intstr = int if key in assistant_mod.CONFIG_INT else str
+				if key in assistant_mod.CONFIG_LIST:
+					update[key] = list(filter(bool, map(intstr, request.form.getlist(key))))
+				else:
+					update[key] = intstr(request.form[key])
 		if update:
 			client.update_config(session['userid'], {assistant: update})
 	return redirect(url_for('config'))
@@ -182,7 +193,7 @@ def oauth_callback():
 	return redirect(url_for('config'))
 
 
-@app.route('/telegram/<token>', methods=['POST'])
+@app.route('/telegram/hook/<token>', methods=['POST'])
 def telegram(token):
 	with Client() as client:
 		client.telegram_update(token, request.json)

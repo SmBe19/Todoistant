@@ -1,5 +1,5 @@
 import threading
-from datetime import datetime
+import datetime
 
 import assistants.automover
 import assistants.priosorter
@@ -10,6 +10,12 @@ ASSISTANTS = {
 	'automover': assistants.automover,
 	'telegram': assistants.telegram,
 }
+
+
+def run_now(assistant, cfg, tmp):
+	if assistant in cfg and cfg[assistant]['enabled']:
+		ASSISTANTS[assistant].run(tmp['api'], tmp['timezone'], cfg[assistant], tmp.setdefault(assistant, {}))
+		cfg[assistant]['last_run'] = datetime.datetime.utcnow()
 
 
 class Runner:
@@ -35,9 +41,8 @@ class Runner:
 								if not api_synced:
 									tmp['api'].sync()
 								print('Run', assistant, 'for', account)
-								ASSISTANTS[assistant].run(tmp['api'], tmp['timezone'], cfg[assistant], tmp.setdefault(assistant, {}))
+								run_now(assistant, cfg, tmp)
 								print('Finished', assistant, 'for', account)
-								cfg['last_run'] = datetime.utcnow()
 
 			self.should_shutdown.wait(60)
 

@@ -5,6 +5,9 @@ from datetime import datetime, timedelta
 
 import requests
 
+import my_json
+import runner
+
 
 def help(msg):
 	def func(f):
@@ -33,6 +36,7 @@ class Telegram:
 			'/hi': self.cmd_say_hi,
 			'/help': self.cmd_help,
 			'/register': self.cmd_register,
+			'/project': self.cmd_project,
 		}
 
 	def post(self, method, **data):
@@ -49,7 +53,7 @@ class Telegram:
 
 	@help('Start the conversation with your Todoistant')
 	def cmd_start(self, message):
-		self.reply(message, 'Hi {}!'.format(message['chat']['first_name']))
+		self.reply(message, 'Hi {}!\n\nRegister your account by going to https://todoistant.smeanox.com and then using /register with the specified id.'.format(message['chat']['first_name']))
 
 	@help('Say hi')
 	def cmd_say_hi(self, message):
@@ -76,11 +80,74 @@ class Telegram:
 		self.reply(message, 'Please enter the following code to connect your account:')
 		self.reply(message, code)
 
+	@help('Change the project of the last task')
+	def cmd_project(self, message):
+		if message['chat']['id'] not in self.chat_to_user:
+			return self.reply(message, 'Sorry, you need to register to chat with me.')
+		with self.config_manager.get(self.chat_to_user[message['chat']['id']]) as (cfg, tmp):
+			if 'telegram_last_task' not in tmp:
+				return self.reply(message, 'No task was added so far.')
+			if datetime.utcnow() - tmp['api_last_sync'] > timedelta(minutes=10):
+				tmp['api'].sync()
+			project_buttons = [
+				{
+					'text': project['name'],
+					'callback_data': my_json.dumps({
+						'cmd': 'project',
+						'project': project['id'],
+					}),
+				} for project in tmp['api']['projects']]
+			inline_keyboard = []
+			for i in range(0, len(project_buttons)+1, 2):
+				inline_keyboard.append(project_buttons[i:i+2])
+			self.post('sendMessage', chat_id=message['chat']['id'], text='Choose project', reply_markup={
+				'inline_keyboard': inline_keyboard
+			})
+
 	def handle_normal_message(self, message):
-		pass
+		chatid = message['chat']['id']
+		userid = self.chat_to_user[chatid]
+		link = None
+		if 'entities' in message:
+			for entity in message['entities']:
+				if entity['type'] == 'url':
+					link = message['text'][entity['offset']:entity['offset']+entity['length']]
+					break
+
+		def handle_message(kind, prefix=''):
+			with self.config_manager.get(userid) as (cfg, tmp):
+				if 'telegram' not in cfg or not cfg['telegram']['enabled']:
+					self.reply(message, 'Telegram is disabled for your account. Please enable it to chat with me.')
+					return
+				if kind + '_project' not in cfg['telegram']:
+					self.reply(message, 'Sorry, I don\'t know how to handle this type of message.')
+					return
+				tmp['api'].sync()
+				new_task = tmp['api'].items.add(prefix + message['text'], project_id=cfg['telegram'][kind + '_project'])
+				new_task.update(labels=cfg['telegram'][kind + '_labels'][:])
+				new_task.update(due={'string': 'today'})
+				tmp['api'].commit()
+				runner.run_now('priosorter', cfg, tmp)
+				tmp['telegram_last_task'] = new_task
+				self.reply(message, 'Added task.')
+
+		if 'forward_from' in message or 'forward_sender_name' in message:
+			if 'forward_from' in message:
+				sender = message['forward_from']
+				if 'last_name' in sender:
+					sender_name = '{} {}'.format(sender['first_name'], sender['last_name'])
+				else:
+					sender_name = sender['first_name']
+			else:
+				sender_name = message['forward_sender_name']
+			handle_message('forward', '{}: '.format(sender_name))
+		elif link:
+			handle_message('link')
+		else:
+			handle_message('plain')
+		self.post('deleteMessage', chat_id=chatid, message_id=message['message_id'])
 
 	def process(self, message):
-		print('process', message)
 		if message['chat']['type'] != 'private':
 			return self.reply(message, 'This bot is only available in private chats.')
 		command = None
@@ -93,15 +160,36 @@ class Telegram:
 				return self.cmd_start(message)
 			if command in self.commands:
 				return self.commands[command](message)
+		if message['chat']['id'] not in self.chat_to_user:
+			return self.reply(message, 'Sorry, you need to register to chat with me.')
 		self.handle_normal_message(message)
+
+	def process_inline(self, query):
+		self.post('answerCallbackQuery', callback_query_id=query['id'])
+		message = query['message']
+		chatid = message['chat']['id']
+		if chatid not in self.chat_to_user:
+			return
+		userid = self.chat_to_user[chatid]
+		try:
+			data = my_json.loads(query['data'])
+		except Exception:
+			return
+		if data['cmd'] == 'project':
+			with self.config_manager.get(userid) as (cfg, tmp):
+				if 'telegram_last_task' not in tmp:
+					return
+				tmp['telegram_last_task'].move(project_id=data['project'])
+				tmp['api'].commit()
+			self.post('editMessageText', chat_id=chatid, message_id=message['message_id'], text='Task moved.')
 
 	def run_forever(self):
 		self.token = base64.urlsafe_b64encode(os.urandom(32)).decode()
 		webhook = os.environ['TELEGRAM_WEBHOOK']
 		if not webhook.endswith('/'):
 			webhook += '/'
-		webhook += self.token
-		self.post('setWebhook', url=webhook, max_connections=4, allowed_updates=['message'])
+		webhook += 'hook/' + self.token
+		self.post('setWebhook', url=webhook, max_connections=4, allowed_updates=['message', 'callback_query'])
 		self.post('setMyCommands', commands=[{
 			'command': cmd,
 			'description': func.__description__,
@@ -114,12 +202,16 @@ class Telegram:
 					if update['update_id'] in self.processed_updates:
 						continue
 					self.processed_updates.add(update['update_id'])
-					if 'message' not in update:
-						continue
-					try:
-						self.process(update['message'])
-					except RuntimeError:
-						pass
+					if 'message' in update:
+						try:
+							self.process(update['message'])
+						except RuntimeError:
+							pass
+					elif 'callback_query' in update:
+						try:
+							self.process_inline(update['callback_query'])
+						except RuntimeError:
+							pass
 				while self.message_queue:
 					chatid, text = self.message_queue.pop()
 					try:

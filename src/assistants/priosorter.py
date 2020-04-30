@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta
 
 INIT_CONFIG = {}
-
 CONFIG_VERSION = 1
-
 CONFIG_WHITELIST = []
+CONFIG_INT = []
+CONFIG_LIST = []
 
 
 def migrate_config(cfg, old_version):
@@ -42,7 +42,7 @@ def run(api, timezone, cfg, tmp):
 	now = datetime.now(timezone)
 	items = []
 	for item in api.state['items']:
-		if not item['due'] or item['date_completed']:
+		if not item['due'] or ('date_completed' in item and item['date_completed']):
 			continue
 		due = datetime.strptime(item['due']['date'].split('T')[0], '%Y-%m-%d')
 		if now.date() == due.date():
