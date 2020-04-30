@@ -10,5 +10,16 @@
             <button class="btn btn-primary" type="submit">Login</button>
         </form>
     </div>
+    {% if debug %}
+    <div class="mt-4">
+        <form action="{{ url_for('login') }}" method="post">
+            <label>
+                User ID:
+                <input class="form-control" name="userid" type="text" />
+            </label>
+            <button class="btn btn-primary" type="submit">Debug Login</button>
+        </form>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

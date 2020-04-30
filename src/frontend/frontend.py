@@ -40,7 +40,10 @@ def format_datetime(value, format='%d.%m.%Y %H:%M:%S'):
 
 @app.context_processor
 def inject_now():
-	return {'now': datetime.datetime.utcnow()}
+	return {
+		'now': datetime.datetime.utcnow(),
+		'debug': app.debug,
+	}
 
 
 @app.route('/')
@@ -74,6 +77,21 @@ def update_config(assistant):
 				update[key] = str(request.form[key])
 		if update:
 			client.update_config(session['userid'], {assistant: update})
+	return redirect(url_for('config'))
+
+
+@app.route('/login', methods=['POST'])
+def login():
+	if not app.debug:
+		return redirect(url_for('index'))
+	session['userid'] = request.form['userid']
+	session['full_name'] = 'Test User'
+	session['avatar'] = ''
+	session['timezone'] = {
+		'timezone': 'Europe/Zurich',
+		'hours': 2,
+		'minutes': 0,
+	}
 	return redirect(url_for('config'))
 
 
