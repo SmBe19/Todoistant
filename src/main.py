@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 import argparse
 import os
-import signal
-import subprocess
 
 import client
 
@@ -10,11 +8,7 @@ os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def run_frontend(args):
-    os.setpgrp()  # create new process group, become its leader
-    try:
-        subprocess.run(['gunicorn', '--bind', '0.0.0.0:{}'.format(args.port), 'src.frontend.frontend:app'])
-    finally:
-        os.killpg(0, signal.SIGTERM)
+    os.execvp('gunicorn', ['gunicorn', '--bind', '0.0.0.0:{}'.format(args.port), 'src.frontend.frontend:app'])
 
 
 def run_server(args):
