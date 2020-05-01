@@ -29,7 +29,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="5.6"
-     inkscape:cx="35.331452"
+     inkscape:cx="47.652881"
      inkscape:cy="22.333527"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
@@ -48,7 +48,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -60,19 +60,19 @@
     <ellipse
        style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1.05833328;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="path4537"
-       cx="8.9338446"
+       cx="8.4644537"
        cy="289.10556"
        rx="5.286931"
        ry="5.2876372" />
     <path
        style="fill:none;stroke:#000000;stroke-width:1.05833328;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="m 8.8807546,294.51266 0.1769685,3.14161"
+       d="m 8.4113636,294.51266 0.1769685,3.14161"
        id="path4543"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="cc" />
     <path
        style="fill:none;stroke:#000000;stroke-width:1.05833328;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="M 2.2886813,286.19403 14.05708,283.80465"
+       d="M 1.8192903,286.19403 13.587689,283.80465"
        id="path4545"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="cc" />
@@ -81,8 +81,8 @@
        id="rect4547"
        width="8.361805"
        height="2.3008838"
-       x="-54.88345"
-       y="278.60159"
+       x="-55.342815"
+       y="278.50507"
        transform="matrix(0.97863441,-0.2056081,0.20555549,0.97864546,0,0)" />
   </g>
 </svg>
