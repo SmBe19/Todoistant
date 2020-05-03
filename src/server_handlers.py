@@ -104,6 +104,7 @@ def get_projects(account, mgr):
 	with mgr.get(account) as (cfg, tmp):
 		if datetime.datetime.utcnow() - tmp['api_last_sync'] > datetime.timedelta(minutes=10):
 			tmp['api'].sync()
+			tmp['api_last_sync'] = datetime.datetime.utcnow()
 		return [{
 			'name': project['name'],
 			'id': project['id'],
@@ -117,6 +118,7 @@ def get_labels(account, mgr):
 	with mgr.get(account) as (cfg, tmp):
 		if datetime.datetime.utcnow() - tmp['api_last_sync'] > datetime.timedelta(minutes=10):
 			tmp['api'].sync()
+			tmp['api_last_sync'] = datetime.datetime.utcnow()
 		return [{
 			'name': project['name'],
 			'id': project['id'],

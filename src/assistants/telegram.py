@@ -5,6 +5,9 @@ from utils import utc_to_local, parse_task_config
 INIT_CONFIG = {
 	'chatid': 0,
 	'username': '',
+	'plain_labels': [],
+	'link_labels': [],
+	'forward_labels': [],
 }
 CONFIG_VERSION = 1
 CONFIG_WHITELIST = [

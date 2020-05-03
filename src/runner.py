@@ -45,6 +45,7 @@ class Runner:
 							if ASSISTANTS[assistant].should_run(tmp['api'], tmp['timezone'], cfg[assistant], tmp.setdefault(assistant, {})):
 								if not api_synced:
 									tmp['api'].sync()
+									tmp['api_last_sync'] = datetime.datetime.utcnow()
 								print('Run', assistant, 'for', account)
 								run_now(assistant, cfg, tmp, self.config_manager)
 								print('Finished', assistant, 'for', account)
