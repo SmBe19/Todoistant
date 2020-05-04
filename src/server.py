@@ -89,6 +89,8 @@ def run_server(args):
 	runner_thread = threading.Thread(target=my_runner.run_forever)
 	runner_thread.daemon = True
 	runner_thread.start()
+	with config_manager.get('todoist') as (cfg, tmp):
+		tmp['todoist'] = my_runner
 	print('Runner started')
 
 	try:

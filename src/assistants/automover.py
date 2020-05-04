@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from utils import parse_task_config, utc_to_local
+from utils import parse_task_config, utc_to_local, run_every
 
 INIT_CONFIG = {}
 CONFIG_VERSION = 1
@@ -15,6 +15,10 @@ def migrate_config(cfg, old_version):
 
 def should_run(api, timezone, cfg, tmp):
 	return 'last_run' not in cfg or utc_to_local(cfg['last_run'], timezone).date() != datetime.now(timezone).date()
+
+
+def handle_update(api, timezone, cfg, tmp, update):
+	return False
 
 
 def run(api, timezone, telegram, cfg, tmp):

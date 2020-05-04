@@ -195,11 +195,18 @@ def oauth_callback():
 
 
 @app.route('/telegram/hook/<token>', methods=['POST'])
-def telegram(token):
+def telegram_hook(token):
 	with Client() as client:
 		client.telegram_update(token, request.json)
 	return ''
 
+
+@app.route('/todoist/hook', methods=['POST'])
+def todoist_hook():
+	# TODO check hmac
+	with Client() as client:
+		client.todoist_hook(request.headers['X-Todoist-Delivery-Id'], request.json)
+	return ''
 
 if __name__ == '__main__':
 	app.run(host='0.0.0.0', port=8000, debug=True)

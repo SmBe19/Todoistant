@@ -150,3 +150,15 @@ def telegram_disconnect(account, mgr):
 def telegram_connect(account, code, mgr):
 	with mgr.get('telegram') as (cfg, tmp):
 		return tmp['telegram'].finish_register(account, code)
+
+
+@handler
+def todoist_hook(hook_id, hook_data, mgr):
+	with mgr.get('todoist') as (cfg, tmp):
+		if 'processed_hooks' not in tmp:
+			tmp['processed_hooks'] = set()
+		if hook_id in tmp['processed_hooks']:
+			return 'ok'
+		tmp['processed_hooks'].add(hook_id)
+		tmp['todoist'].receive_update(hook_data)
+		return 'ok'

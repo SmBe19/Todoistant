@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
 
+from utils import run_every, run_next_in
+
 INIT_CONFIG = {}
 CONFIG_VERSION = 1
 CONFIG_WHITELIST = []
@@ -11,8 +13,10 @@ def migrate_config(cfg, old_version):
 	pass
 
 
-def should_run(api, timezone, cfg, tmp):
-	return 'last_run' not in cfg or (datetime.utcnow() - cfg['last_run']) > timedelta(minutes=15)
+should_run = run_every(timedelta(minutes=15))
+
+
+handle_update = run_next_in(timedelta(seconds=1), {'item:added', 'item:updated'})
 
 
 def _sort_key(prio_labels):
@@ -46,12 +50,13 @@ def run(api, timezone, telegram, cfg, tmp):
 			continue
 		due = datetime.strptime(item['due']['date'].split('T')[0], '%Y-%m-%d')
 		if now.date() == due.date():
-			if str(item['id']) in api.state['day_orders']:
+			if str(item['id']) in api.state['day_orders'] and api.state['day_orders'][str(item['id'])] != item['day_order']:
 				item.update(day_order=api.state['day_orders'][str(item['id'])])
 			items.append(item)
 	items.sort(key=_sort_key(prio_labels))
 	new_item_day_order = {}
 	for idx, item in enumerate(items):
-		new_item_day_order[item['id']] = idx+1
+		if item['day_order'] != idx+1:
+			new_item_day_order[item['id']] = idx+1
 	api.items.update_day_orders(new_item_day_order)
 	api.commit()

@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from utils import utc_to_local, parse_task_config
+from utils import utc_to_local, parse_task_config, run_every, run_next_in
 
 INIT_CONFIG = {
 	'chatid': 0,
@@ -37,8 +37,10 @@ def migrate_config(cfg, old_version):
 	pass
 
 
-def should_run(api, timezone, cfg, tmp):
-	return 'last_run' not in cfg or (datetime.utcnow() - cfg['last_run']) > timedelta(minutes=15) or ('next_run' in cfg and cfg['next_run'] and datetime.now(timezone) > cfg['next_run'])
+should_run = run_every(timedelta(minutes=15))
+
+
+handle_update = run_next_in(timedelta(seconds=1), {'item:added', 'item:updated'})
 
 
 def run(api, timezone, telegram, cfg, tmp):
