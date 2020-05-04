@@ -13,6 +13,12 @@ def handler(f):
 	return f
 
 
+def sync_if_necessary(tmp):
+	if datetime.datetime.utcnow() - tmp['api_last_sync'] > datetime.timedelta(minutes=10):
+		tmp['api'].sync()
+		tmp['api_last_sync'] = datetime.datetime.utcnow()
+
+
 @handler
 def add_account(account, mgr):
 	if account not in mgr:
@@ -102,9 +108,7 @@ def get_projects(account, mgr):
 	if account not in mgr:
 		return None
 	with mgr.get(account) as (cfg, tmp):
-		if datetime.datetime.utcnow() - tmp['api_last_sync'] > datetime.timedelta(minutes=10):
-			tmp['api'].sync()
-			tmp['api_last_sync'] = datetime.datetime.utcnow()
+		sync_if_necessary(tmp)
 		return [{
 			'name': project['name'],
 			'id': project['id'],
@@ -116,13 +120,31 @@ def get_labels(account, mgr):
 	if account not in mgr:
 		return None
 	with mgr.get(account) as (cfg, tmp):
-		if datetime.datetime.utcnow() - tmp['api_last_sync'] > datetime.timedelta(minutes=10):
-			tmp['api'].sync()
-			tmp['api_last_sync'] = datetime.datetime.utcnow()
+		sync_if_necessary(tmp)
 		return [{
 			'name': project['name'],
 			'id': project['id'],
 		} for project in tmp['api'].state['labels']]
+
+
+@handler
+def get_templates(account, mgr):
+	if account not in mgr:
+		return None
+	with mgr.get(account) as (cfg, tmp):
+		sync_if_necessary(tmp)
+		if 'templates' not in cfg or 'src_project' not in cfg['templates']:
+			return []
+		return [{
+			'name': item['content'],
+			'id': item['id'],
+		} for item in tmp['api'].state['items'] if item['project_id'] == cfg['templates']['src_project']]
+
+
+@handler
+def start_template(account, template, mgr):
+	# TODO implement
+	return 'ok'
 
 
 @handler

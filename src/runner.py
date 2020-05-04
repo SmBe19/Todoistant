@@ -4,11 +4,13 @@ import datetime
 import assistants.automover
 import assistants.priosorter
 import assistants.telegram
+import assistants.templates
 
 ASSISTANTS = {
 	'priosorter': assistants.priosorter,
 	'automover': assistants.automover,
 	'telegram': assistants.telegram,
+	'templates': assistants.templates,
 }
 
 

@@ -8,6 +8,7 @@ import requests
 
 import my_json
 import runner
+from server_handlers import sync_if_necessary
 
 
 def help(msg):
@@ -95,9 +96,7 @@ class Telegram:
 		self.reply(message, code)
 
 	def create_project_buttons(self, tmp, cmd):
-		if datetime.utcnow() - tmp['api_last_sync'] > timedelta(minutes=10):
-			tmp['api'].sync()
-			tmp['api_last_sync'] = datetime.utcnow()
+		sync_if_necessary(tmp)
 		project_buttons = [
 			{
 				'text': project['name'],
@@ -130,9 +129,7 @@ class Telegram:
 			})
 
 	def create_label_buttons(self, tmp, cmd, active):
-		if datetime.utcnow() - tmp['api_last_sync'] > timedelta(minutes=10):
-			tmp['api'].sync()
-			tmp['api_last_sync'] = datetime.utcnow()
+		sync_if_necessary(tmp)
 		label_buttons = [
 			{
 				'text': '{} (on)'.format(label['name']) if label['id'] in active else label['name'],

@@ -70,7 +70,8 @@ def config():
 			enabled[assistant] = assistant in current_config and current_config[assistant]['enabled']
 		projects = client.get_projects(session['userid'])
 		labels = client.get_labels(session['userid'])
-		return render_template('config.html', config=current_config, enabled=enabled, projects=projects, labels=labels)
+		templates = client.get_templates(session['userid'])
+		return render_template('config.html', config=current_config, enabled=enabled, projects=projects, labels=labels, templates=templates)
 
 
 @app.route('/config/update/<assistant>', methods=['POST'])
@@ -95,6 +96,19 @@ def update_config(assistant):
 					update[key] = intstr(request.form[key])
 		if update:
 			client.update_config(session['userid'], {assistant: update})
+	return redirect(url_for('config'))
+
+
+@app.route('/template/start', methods=['POST'])
+def start_template():
+	if 'userid' not in session:
+		return redirect(url_for('index'))
+	if 'template_id' not in request.form:
+		return redirect(url_for('config'))
+	with Client() as client:
+		res = client.start_template(session['userid'], request.form['template_id'])
+		if res != 'ok':
+			flash('Connecting Telegram account failed: ' + res)
 	return redirect(url_for('config'))
 
 
