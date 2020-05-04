@@ -39,7 +39,7 @@ def run_next_in(delta, update_types=None):
 		if update_types is not None and update['event_name'] not in update_types:
 			return
 		new_next_run = datetime.now(timezone) + delta
-		if 'next_run' in cfg and cfg['next_run'] and new_next_run > ['next_run'] > datetime.now(timezone):
+		if 'next_run' in cfg and cfg['next_run'] and new_next_run > cfg['next_run'] > datetime.now(timezone):
 			return False
 		cfg['next_run'] = new_next_run
 		return True

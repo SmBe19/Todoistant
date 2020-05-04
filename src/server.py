@@ -80,6 +80,7 @@ def run_server(args):
 	telegram_thread = threading.Thread(target=my_telegram.run_forever)
 	telegram_thread.daemon = True
 	telegram_thread.start()
+	config_manager.dummy_configs.add('telegram')
 	with config_manager.get('telegram') as (cfg, tmp):
 		tmp['telegram'] = my_telegram
 	print('Telegram started')
@@ -89,6 +90,7 @@ def run_server(args):
 	runner_thread = threading.Thread(target=my_runner.run_forever)
 	runner_thread.daemon = True
 	runner_thread.start()
+	config_manager.dummy_configs.add('todoist')
 	with config_manager.get('todoist') as (cfg, tmp):
 		tmp['todoist'] = my_runner
 	print('Runner started')

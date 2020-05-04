@@ -10,13 +10,16 @@ class ConfigManager:
 	def __init__(self):
 		self._lock = threading.Lock()
 		self._configs = {}
+		self.dummy_configs = set()
 
 	def __contains__(self, item):
 		with self._lock:
 			return str(item) in self._configs
 
 	def __iter__(self):
-		return iter(list(self._configs.keys()))
+		with self._lock:
+			items = [x for x in self._configs.keys() if x not in self.dummy_configs]
+		return iter(items)
 
 	def get(self, key):
 		with self._lock:
