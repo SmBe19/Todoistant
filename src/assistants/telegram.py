@@ -56,11 +56,11 @@ def run(api, timezone, telegram, cfg, tmp):
 	last = utc_to_local(cfg.get('last_run', now - timedelta(days=2)), timezone)
 	next_run = None
 	for item in api.state['items']:
-		if not item['due'] or item['date_completed']:
+		if item['date_completed']:
 			continue
 		if telegram_label['id'] not in item['labels']:
 			continue
-		due = datetime.fromisoformat(item['due']['date']).replace(tzinfo=timezone)
+		due = datetime.fromisoformat(item['due']['date']).replace(tzinfo=timezone) if item['due'] else None
 		content, config = parse_task_config(item['content'])
 		if 'telegram-due' in config:
 			new_due = config['telegram-due']
@@ -72,12 +72,17 @@ def run(api, timezone, telegram, cfg, tmp):
 					due = new_due
 				elif ':' in new_due:
 					parts = new_due.split(':')
-					due = due.replace(hour=int(parts[0]), minute=int(parts[1]))
+					if not due:
+						due = datetime.now(timezone)
+					due = due.replace(hour=int(parts[0]), minute=int(parts[1]), second=0, microsecond=0)
 			except ValueError as e:
 				telegram('Error with {}: {}.'.format(content, e))
 				continue
+		if not due:
+			continue
 		if due > now and (not next_run or due < next_run):
 			next_run = due
+		print(last, due, now)
 		if last <= due <= now:
 			telegram(content)
 	cfg['next_run'] = next_run

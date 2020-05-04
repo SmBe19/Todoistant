@@ -25,10 +25,10 @@ def run_every(delta):
 	def f(api, timezone, cfg, tmp):
 		if 'last_run' not in cfg:
 			return True
-		if (datetime.utcnow() - cfg['last_run']) > delta:
-			return True
 		if 'next_run' in cfg and cfg['next_run'] and datetime.now(timezone) > cfg['next_run']:
 			cfg['next_run'] = None
+			return True
+		if (datetime.utcnow() - cfg['last_run']) > delta:
 			return True
 		return False
 	return f
