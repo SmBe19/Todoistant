@@ -82,7 +82,6 @@ def run(api, timezone, telegram, cfg, tmp):
 			continue
 		if due > now and (not next_run or due < next_run):
 			next_run = due
-		print(last, due, now)
 		if last <= due <= now:
 			telegram(content)
 	cfg['next_run'] = next_run
