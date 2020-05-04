@@ -53,6 +53,7 @@
         </div>
         <div class="col-md-6">
             {{ enable_disable('templates') }}
+            {% if enabled.templates %}
             <div class="mt-3">
                 <form action="{{ url_for('update_config', assistant='templates') }}" method="post">
                     <div class="form-group">
@@ -66,6 +67,7 @@
                     <button class="btn btn-primary" type="submit">Save</button>
                 </form>
             </div>
+            {% endif %}
         </div>
     </div>
 </div>
