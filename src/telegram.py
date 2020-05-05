@@ -8,6 +8,7 @@ import requests
 
 import my_json
 import runner
+from assistants import templates
 from server_handlers import sync_if_necessary
 
 
@@ -52,6 +53,7 @@ class Telegram:
 			'/labels': self.cmd_labels,
 			'/default_labels': self.cmd_default_labels,
 			'/reset': self.cmd_reset_default,
+			'/template': self.cmd_template,
 		}
 
 	def post(self, method, **data):
@@ -65,6 +67,19 @@ class Telegram:
 
 	def reply(self, message, text):
 		self.post('sendMessage', chat_id=message['chat']['id'], text=text)
+
+	def reply_keyboard(self, message, text, buttons):
+		self.post('sendMessage', chat_id=message['chat']['id'], text=text, reply_markup={
+			'inline_keyboard': buttons
+		})
+
+	def change_reply(self, message, text):
+		self.post('editMessageText', chat_id=message['chat']['id'], message_id=message['message_id'], text=text)
+
+	def change_keyboard(self, message, text, buttons):
+		self.post('editMessageText', chat_id=message['chat']['id'], message_id=message['message_id'], text=text, reply_markup={
+			'inline_keyboard': buttons
+		})
 
 	@help('Start the conversation with your Todoistant')
 	def cmd_start(self, message):
@@ -95,6 +110,12 @@ class Telegram:
 		self.reply(message, 'Please enter the following code to connect your account:')
 		self.reply(message, code)
 
+	def buttons_in_rows(self, buttons, rows):
+		inline_keyboard = []
+		for i in range(0, len(buttons)+rows-1, rows):
+			inline_keyboard.append(buttons[i:i+rows])
+		return inline_keyboard
+
 	def create_project_buttons(self, tmp, cmd):
 		sync_if_necessary(tmp)
 		project_buttons = [
@@ -105,10 +126,7 @@ class Telegram:
 					'project': project['id'],
 				}),
 			} for project in tmp['api']['projects']]
-		inline_keyboard = []
-		for i in range(0, len(project_buttons)+1, 2):
-			inline_keyboard.append(project_buttons[i:i+2])
-		return inline_keyboard
+		return self.buttons_in_rows(project_buttons, 2)
 
 	@help('Change the project of the last task')
 	@require_register
@@ -116,17 +134,13 @@ class Telegram:
 		with self.config_manager.get(self.chat_to_user[message['chat']['id']]) as (cfg, tmp):
 			if 'telegram_last_task' not in tmp:
 				return self.reply(message, 'No task was added so far.')
-			self.post('sendMessage', chat_id=message['chat']['id'], text='Choose project:', reply_markup={
-				'inline_keyboard': self.create_project_buttons(tmp, 'project')
-			})
+			self.reply_keyboard(message, 'Choose project:', self.create_project_buttons(tmp, 'project'))
 
 	@help('Change the default project')
 	@require_register
 	def cmd_default_project(self, message):
 		with self.config_manager.get(self.chat_to_user[message['chat']['id']]) as (cfg, tmp):
-			self.post('sendMessage', chat_id=message['chat']['id'], text='Choose default project for next 20 minutes:', reply_markup={
-				'inline_keyboard': self.create_project_buttons(tmp, 'default_project')
-			})
+			self.reply_keyboard(message, 'Choose default project for next 20 minutes:', self.create_project_buttons(tmp, 'default_project'))
 
 	def create_label_buttons(self, tmp, cmd, active):
 		sync_if_necessary(tmp)
@@ -145,10 +159,7 @@ class Telegram:
 				'label': -1,
 			}),
 		})
-		inline_keyboard = []
-		for i in range(0, len(label_buttons)+1, 2):
-			inline_keyboard.append(label_buttons[i:i+2])
-		return inline_keyboard
+		return self.buttons_in_rows(label_buttons, 2)
 
 	@help('Change the labels of the last task')
 	@require_register
@@ -156,9 +167,7 @@ class Telegram:
 		with self.config_manager.get(self.chat_to_user[message['chat']['id']]) as (cfg, tmp):
 			if 'telegram_last_task' not in tmp:
 				return self.reply(message, 'No task was added so far.')
-			self.post('sendMessage', chat_id=message['chat']['id'], text='Choose labels:', reply_markup={
-				'inline_keyboard': self.create_label_buttons(tmp, 'labels', tmp['telegram_last_task']['labels'])
-			})
+			self.reply_keyboard(message, 'Choose labels:', self.create_label_buttons(tmp, 'labels', tmp['telegram_last_task']['labels']))
 
 	@help('Change the default labels')
 	@require_register
@@ -166,9 +175,7 @@ class Telegram:
 		with self.config_manager.get(self.chat_to_user[message['chat']['id']]) as (cfg, tmp):
 			if 'telegram_default_labels' not in tmp or self.default_expired(tmp):
 				tmp['telegram_default_labels'] = []
-			self.post('sendMessage', chat_id=message['chat']['id'], text='Choose default labels for next 20 minutes:', reply_markup={
-				'inline_keyboard': self.create_label_buttons(tmp, 'default_labels', tmp['telegram_default_labels'])
-			})
+			self.reply_keyboard(message, 'Choose default labels for next 20 minutes:', self.create_label_buttons(tmp, 'default_labels', tmp['telegram_default_labels']))
 
 	@help('Reset the default settings')
 	@require_register
@@ -180,6 +187,22 @@ class Telegram:
 
 	def default_expired(self, tmp):
 		return 'telegram_default_timestamp' not in tmp or (datetime.utcnow() - tmp['telegram_default_timestamp']) > timedelta(minutes=20)
+
+	@help('Instantiate a template')
+	@require_register
+	def cmd_template(self, message):
+		with self.config_manager.get(self.chat_to_user[message['chat']['id']]) as (cfg, tmp):
+			if 'templates' not in cfg or not cfg['templates']['enabled']:
+				return self.reply(message, 'Templates are not enabled.')
+			my_templates = templates.get_templates(tmp['api'], tmp['timezone'], cfg['templates'], tmp.setdefault('templates', {}))
+			template_buttons = [{
+				'text': template['name'],
+				'callback_data': my_json.dumps({
+					'cmd': 'template',
+					'template': template['id'],
+				})
+			} for template in my_templates]
+			self.reply_keyboard(message, 'Choose template:', self.buttons_in_rows(template_buttons, 2))
 
 	def handle_normal_message(self, message):
 		chatid = message['chat']['id']
@@ -266,13 +289,13 @@ class Telegram:
 					return
 				tmp['telegram_last_task'].move(project_id=data['project'])
 				tmp['api'].commit()
-			self.post('editMessageText', chat_id=chatid, message_id=message['message_id'], text='Task moved.')
+			self.change_reply(message, 'Task moved.')
 		elif data['cmd'] == 'labels':
 			with self.config_manager.get(userid) as (cfg, tmp):
 				if 'telegram_last_task' not in tmp:
 					return
 				if data['label'] == -1:
-					self.post('editMessageText', chat_id=chatid, message_id=message['message_id'], text='Done.')
+					self.change_reply(message, 'Done.')
 				else:
 					labels = tmp['telegram_last_task']['labels'][:]
 					if data['label'] in labels:
@@ -281,27 +304,34 @@ class Telegram:
 						labels.append(data['label'])
 					tmp['telegram_last_task'].update(labels=labels)
 					tmp['api'].commit()
-					self.post('editMessageText', chat_id=chatid, message_id=message['message_id'], text='Choose labels:', reply_markup={
-						'inline_keyboard': self.create_label_buttons(tmp, 'labels', labels)
-					})
+					self.change_keyboard(message, 'Choose labels:', self.create_label_buttons(tmp, 'labels', labels))
 		elif data['cmd'] == 'default_project':
 			with self.config_manager.get(userid) as (cfg, tmp):
 				tmp['telegram_default_timestamp'] = datetime.utcnow()
 				tmp['telegram_default_project'] = data['project']
-			self.post('editMessageText', chat_id=chatid, message_id=message['message_id'], text='Default project set.')
+			self.change_reply(message, 'Default project set.')
 		elif data['cmd'] == 'default_labels':
 			with self.config_manager.get(userid) as (cfg, tmp):
 				tmp['telegram_default_timestamp'] = datetime.utcnow()
 				if data['label'] == -1:
-					self.post('editMessageText', chat_id=chatid, message_id=message['message_id'], text='Default labels set.')
+					self.change_reply(message, 'Default labels set.')
 				else:
 					if data['label'] in tmp['telegram_default_labels']:
 						tmp['telegram_default_labels'].remove(data['label'])
 					else:
 						tmp['telegram_default_labels'].append(data['label'])
-					self.post('editMessageText', chat_id=chatid, message_id=message['message_id'], text='Choose default labels for next 20 minutes:', reply_markup={
-						'inline_keyboard': self.create_label_buttons(tmp, 'default_labels', tmp['telegram_default_labels'])
-					})
+						self.change_keyboard(message, 'Choose default labels for next 20 minutes:', self.create_label_buttons(tmp, 'default_labels', tmp['telegram_default_labels']))
+		elif data['cmd'] == 'template':
+			with self.config_manager.get(userid) as (cfg, tmp):
+				tmp['telegram_template_id'] = data['template']
+				self.change_keyboard(message, 'Choose project:', self.create_project_buttons(tmp, 'template_project'))
+		elif data['cmd'] == 'template_project':
+			with self.config_manager.get(userid) as (cfg, tmp):
+				if not tmp['telegram_template_id']:
+					return self.change_reply(message, 'Something went wrong...')
+				sync_if_necessary(tmp)
+				templates.start(tmp['api'], tmp['timezone'], cfg['templates'], tmp.setdefault('templates', {}), tmp['telegram_template_id'], data['project'])
+				self.change_reply(message, 'Template instantiated.')
 
 	def run_forever(self):
 		self.token = base64.urlsafe_b64encode(os.urandom(32)).decode()
