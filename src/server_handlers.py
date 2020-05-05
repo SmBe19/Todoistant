@@ -4,6 +4,7 @@ import todoist
 
 import runner
 import todoist_api
+from assistants import templates
 
 handlers = {}
 
@@ -67,7 +68,7 @@ def set_enabled(account, assistant, enabled, mgr):
 		return 'unknown account'
 	with mgr.get(account) as (cfg, tmp):
 		if assistant not in cfg:
-			cfg[assistant] = runner.ASSISTANTS[assistant].INIT_CONFIG
+			cfg[assistant] = runner.ASSISTANTS[assistant].INIT_CONFIG.copy()
 			cfg[assistant]['config_version'] = runner.ASSISTANTS[assistant].CONFIG_VERSION
 		cfg[assistant]['enabled'] = enabled
 	return 'ok'
@@ -133,17 +134,18 @@ def get_templates(account, mgr):
 		return None
 	with mgr.get(account) as (cfg, tmp):
 		sync_if_necessary(tmp)
-		if 'templates' not in cfg or 'src_project' not in cfg['templates']:
+		if 'templates' not in cfg:
 			return []
-		return [{
-			'name': item['content'],
-			'id': item['id'],
-		} for item in tmp['api'].state['items'] if item['project_id'] == cfg['templates']['src_project']]
+		return templates.get_templates(tmp['api'], tmp['timezone'], cfg['templates'], tmp.setdefault('templates', {}))
 
 
 @handler
-def start_template(account, template, mgr):
-	# TODO implement
+def start_template(account, template, project, mgr):
+	if account not in mgr:
+		return None
+	with mgr.get(account) as (cfg, tmp):
+		sync_if_necessary(tmp)
+		templates.start(tmp['api'], tmp['timezone'], cfg['templates'], tmp.setdefault('templates', {}), template, project)
 	return 'ok'
 
 

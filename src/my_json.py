@@ -1,6 +1,8 @@
 import datetime
 import json
 
+from config import ChangeList
+
 
 def json_object_hook(o):
 	if '__datetime__' in o:
@@ -11,7 +13,9 @@ def json_object_hook(o):
 def json_default(o):
 	from config import ChangeDict
 	if isinstance(o, ChangeDict):
-		return o._data
+		return o.to_dict()
+	if isinstance(o, ChangeList):
+		return o.to_dict()
 	if isinstance(o, datetime.datetime):
 		return {
 			'__datetime__': True,

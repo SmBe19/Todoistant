@@ -31,22 +31,14 @@
     <h2>Smart Templates</h2>
     <div class="row">
         <div class="col-md-6 mb-3">
-            <div class="mb-3">Instantiate templates, with many features to specify dependencies and control the instantiated templates.</div>
+            <div class="mb-3">Instantiate templates, with many features to specify dependencies and control the instantiated templates. Use the config keys 'template-id' and 'template-depends' to specify dependencies (use | to separate several dependencies). Use 'template-due' to specify the desired relative due date (in English).</div>
             {% if config.templates %}
             <div>Last Run: {{ config.templates.last_run|format_datetime }}</div>
-            {% if templates and enabled.templates %}
+            {% if enabled.templates %}
             <div class="mt-3">
-                <form class="form-inline" action="{{ url_for('start_template') }}" method="post">
-                    <div class="form-group mr-2 flex-grow-1">
-                        <label class="sr-only" for="start_template_id">Template</label>
-                        <select class="form-control flex-grow-1" name="template_id" id="start_template_id">
-                            {% for template in templates %}
-                            <option value="{{ template.id }}">{{ template.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <button class="btn btn-primary" type="submit">Start Template</button>
-                </form>
+                {% for active in config.templates.active|sort(attribute='status,start') %}
+                <div><b>{{ active.template }} ({{ active.start|format_datetime }})</b>: {{ active.status }}</div>
+                {% endfor %}
             </div>
             {% endif %}
             {% endif %}
@@ -55,9 +47,9 @@
             {{ enable_disable('templates') }}
             {% if enabled.templates %}
             <div class="mt-3">
-                <form action="{{ url_for('update_config', assistant='templates') }}" method="post">
-                    <div class="form-group">
-                        <label for="templates_src_project">Templates Project</label>
+                <form class="form-inline" action="{{ url_for('update_config', assistant='templates') }}" method="post">
+                    <div class="form-group mr-2">
+                        <label class="mr-2" for="templates_src_project">Templates Project</label>
                         <select class="form-control" name="src_project" id="templates_src_project">
                             {% for project in projects %}
                             <option value="{{ project.id }}" {{ 'selected' if config.templates.src_project == project.id else '' }}>{{ project.name }}</option>
@@ -65,6 +57,30 @@
                         </select>
                     </div>
                     <button class="btn btn-primary" type="submit">Save</button>
+                </form>
+            </div>
+            {% endif %}
+            {% if templates and enabled.templates %}
+            <div class="mt-3">
+                <form class="form-inline" action="{{ url_for('start_template') }}" method="post">
+                    <div class="form-group mr-2">
+                        <label class="sr-only" for="start_template_id">Template</label>
+                        <select class="form-control" name="template_id" id="start_template_id">
+                            {% for template in templates %}
+                            <option value="{{ template.id }}">{{ template.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mr-2">-></div>
+                    <div class="form-group mr-2">
+                        <label class="sr-only" for="start_template_project_id">Project</label>
+                        <select class="form-control" name="project_id" id="start_template_project_id">
+                            {% for project in projects %}
+                            <option value="{{ project.id }}">{{ project.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" type="submit">Start Template</button>
                 </form>
             </div>
             {% endif %}

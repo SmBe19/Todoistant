@@ -29,6 +29,14 @@ class ConfigManager:
 			return self._configs[key]
 
 
+def wrap_in_change(value, root):
+	if isinstance(value, dict):
+		return ChangeDict(value, root=root)
+	elif isinstance(value, list):
+		return ChangeList(value, root=root)
+	return value
+
+
 class ChangeDict:
 
 	def __init__(self, data, root=None):
@@ -38,8 +46,7 @@ class ChangeDict:
 		self._root = root or self
 
 		for key in self._data:
-			if isinstance(self._data[key], dict):
-				self._data[key] = ChangeDict(self._data[key], root=self._root)
+			self._data[key] = wrap_in_change(self._data[key], self._root)
 
 	def __contains__(self, item):
 		return item in self._data
@@ -59,17 +66,59 @@ class ChangeDict:
 			raise RuntimeError()
 		if key not in self._data or value != self._data[key]:
 			self._root.changed = True
-		if isinstance(value, dict):
-			value = ChangeDict(value, root=self._root)
-		self._data[key] = value
+		self._data[key] = wrap_in_change(value, self._root)
 
 	def to_dict(self):
 		res = {}
 		for key in self._data:
 			if isinstance(self._data[key], ChangeDict):
 				res[key] = self._data[key].to_dict()
+			elif isinstance(self._data[key], ChangeList):
+				res[key] = self._data[key].to_dict()
 			else:
 				res[key] = self._data[key]
+		return res
+
+
+class ChangeList:
+
+	def __init__(self, data, root):
+		self._data = data
+		self._root = root
+
+		for i in range(len(self._data)):
+			self._data[i] = wrap_in_change(self._data[i], self._root)
+
+	def __contains__(self, item):
+		return item in self._data
+
+	def __getitem__(self, item):
+		if not self._root._valid:
+			raise RuntimeError()
+		return self._data[item]
+
+	def __setitem__(self, key, value):
+		if not self._root._valid:
+			raise RuntimeError()
+		if value != self._data[key]:
+			self._root.changed = True
+		self._data[key] = wrap_in_change(value, self._root)
+
+	def append(self, value):
+		if not self._root._valid:
+			raise RuntimeError()
+		self._root.changed = True
+		self._data.append(wrap_in_change(value, self._root))
+
+	def to_dict(self):
+		res = []
+		for i in range(len(self._data)):
+			if isinstance(self._data[i], ChangeDict):
+				res.append(self._data[i].to_dict())
+			elif isinstance(self._data[i], ChangeList):
+				res.append(self._data[i].to_dict())
+			else:
+				res.append(self._data[i])
 		return res
 
 

@@ -103,12 +103,19 @@ def update_config(assistant):
 def start_template():
 	if 'userid' not in session:
 		return redirect(url_for('index'))
-	if 'template_id' not in request.form:
+	if 'template_id' not in request.form or 'project_id' not in request.form:
+		flash('Missing argument')
+		return redirect(url_for('config'))
+	try:
+		template_id = int(request.form['template_id'])
+		project_id = int(request.form['project_id'])
+	except ValueError:
+		flash('Invalid template or project')
 		return redirect(url_for('config'))
 	with Client() as client:
-		res = client.start_template(session['userid'], request.form['template_id'])
+		res = client.start_template(session['userid'], template_id, project_id)
 		if res != 'ok':
-			flash('Connecting Telegram account failed: ' + res)
+			flash('Starting template failed: ' + res)
 	return redirect(url_for('config'))
 
 

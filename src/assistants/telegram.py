@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from utils import utc_to_local, parse_task_config, run_every, run_next_in
+from utils import parse_task_config, run_every, run_next_in, local_to_utc
 
 INIT_CONFIG = {
 	'chatid': 0,
@@ -52,8 +52,8 @@ def run(api, timezone, telegram, cfg, tmp):
 	if not telegram_label:
 		return
 
-	now = datetime.now(timezone)
-	last = utc_to_local(cfg.get('last_run', now - timedelta(days=2)), timezone)
+	now = datetime.utcnow()
+	last = cfg.get('last_run', now - timedelta(days=2))
 	next_run = None
 	for item in api.state['items']:
 		if item['date_completed']:
@@ -75,6 +75,7 @@ def run(api, timezone, telegram, cfg, tmp):
 					if not due:
 						due = datetime.now(timezone)
 					due = due.replace(hour=int(parts[0]), minute=int(parts[1]), second=0, microsecond=0)
+				due = local_to_utc(due)
 			except ValueError as e:
 				telegram('Error with {}: {}.'.format(content, e))
 				continue
