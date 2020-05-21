@@ -47,8 +47,8 @@ class Runner:
 						for assistant in ASSISTANTS:
 							if assistant in cfg and cfg[assistant]['enabled']:
 								had_update = ASSISTANTS[assistant].handle_update(tmp['api'], tmp['timezone'], cfg[assistant], tmp.setdefault(assistant, {}), update) or had_update
-				if had_update:
-					print('Received updates')
+				# if had_update:
+				# 	print('Received updates')
 
 				for account in self.config_manager:
 					api_synced = False
@@ -64,9 +64,9 @@ class Runner:
 									if not api_synced:
 										tmp['api'].sync()
 										tmp['api_last_sync'] = datetime.datetime.utcnow()
-									print('Run', assistant, 'for', account)
+									# print('Run', assistant, 'for', account)
 									run_now(assistant, cfg, tmp, self.config_manager)
-									print('Finished', assistant, 'for', account)
+									# print('Finished', assistant, 'for', account)
 				self.new_update.wait(3 if had_update else 60)
 
 	def receive_update(self, update):
