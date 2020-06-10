@@ -1,4 +1,5 @@
 import base64
+import logging
 import os
 import threading
 from datetime import datetime, timedelta
@@ -10,6 +11,8 @@ import my_json
 import runner
 from assistants import templates
 from server_handlers import sync_if_necessary
+
+logger = logging.getLogger(__name__)
 
 
 def help(msg):
@@ -61,7 +64,7 @@ class Telegram:
 			data = {}
 		res = requests.post('https://api.telegram.org/bot{}/{}'.format(self.bot_token, method), json=data).json()
 		if not res['ok']:
-			print('Error:', res['description'])
+			logger.warning('Error: %s', res['description'])
 			raise RuntimeError()
 		return res['result']
 
@@ -372,7 +375,7 @@ class Telegram:
 
 	def receive(self, token, update):
 		if token != self.token:
-			print('Received bad token')
+			logger.warning('Received bad token')
 			return
 		with self.new_update:
 			self.update_queue.append(update)

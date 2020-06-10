@@ -1,6 +1,10 @@
+import logging
+
 from datetime import datetime, timedelta
 
 from utils import run_every, run_next_in, parse_task_config
+
+logger = logging.getLogger(__name__)
 
 INIT_CONFIG = {
 	'active': [],
@@ -127,23 +131,21 @@ def update_template_state(api, timezone, cfg, tmp, template):
 
 def run(api, timezone, telegram, cfg, tmp):
 	new_active = []
-	print('Start templates')
 	for template in cfg['active']:
 		if not template['finished']:
 			try:
-				print('Start update_template_state')
+				logger.debug('Start update_template_state')
 				update_template_state(api, timezone, cfg, tmp, template)
-				print('Finished update_template_state')
+				logger.debug('Finished update_template_state')
 			except ItemDeletedError:
 				template['finished'] = datetime.utcnow()
 				template['status'] = 'Item was deleted'
 			except Exception as e:
-				print('Template exception', e)
+				logger.debug('Template exception', e)
 			new_active.append(template)
 		else:
 			if (datetime.utcnow() - template['finished']) < timedelta(days=3):
 				new_active.append(template)
-	print('Finished templates')
 	cfg['active'] = new_active
 
 

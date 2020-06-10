@@ -1,8 +1,11 @@
+import logging
 import os
 import threading
 
 import my_json
 from consts import CONFIG_PATH
+
+logger = logging.getLogger(__name__)
 
 
 class ConfigManager:
@@ -13,15 +16,18 @@ class ConfigManager:
 		self.dummy_configs = set()
 
 	def __contains__(self, item):
+		logger.debug('Config Manager check contains %s', item)
 		with self._lock:
 			return str(item) in self._configs
 
 	def __iter__(self):
+		logger.debug('Config Manager iter')
 		with self._lock:
 			items = [x for x in self._configs.keys() if x not in self.dummy_configs]
 		return iter(items)
 
 	def get(self, key):
+		logger.debug('Config Manager get %s', key)
 		with self._lock:
 			key = str(key)
 			if key not in self._configs:
@@ -131,18 +137,22 @@ class Config:
 		self._tmpdata = {}
 
 	def load(self):
+		logger.debug('Load config %s', self.key)
 		with self._lock:
 			with open(os.path.join(CONFIG_PATH, '{}.json'.format(self.key)), 'r') as f:
 				self._data = ChangeDict(my_json.load(f))
 
 	def save(self):
+		logger.debug('Save config %s', self.key)
 		with self._lock:
 			with open(os.path.join(CONFIG_PATH, '{}.json'.format(self.key)), 'w') as f:
 				my_json.dump(self._data, f)
 			self._data.changed = False
 
 	def __enter__(self):
+		logger.debug('Config %s acquire lock', self.key)
 		self._lock.acquire()
+		logger.debug('Config %s acquired lock', self.key)
 		self._data._valid = True
 		return self._data, self._tmpdata
 
@@ -151,3 +161,4 @@ class Config:
 			self.save()
 		self._data._valid = False
 		self._lock.release()
+		logger.debug('Config %s released lock', self.key)

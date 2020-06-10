@@ -1,4 +1,5 @@
 import datetime
+import logging
 import os
 import socketserver
 import threading
@@ -16,6 +17,12 @@ from consts import SOCKET_NAME, CACHE_PATH, CONFIG_PATH
 
 dotenv.load_dotenv('secrets.env')
 
+logging.basicConfig(filename="todoistant.log", format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', level=logging.DEBUG)
+stream_handler = logging.StreamHandler()
+stream_handler.setLevel(logging.INFO)
+logging.getLogger().addHandler(stream_handler)
+logger = logging.getLogger(__name__)
+
 config_manager = ConfigManager()
 
 
@@ -28,7 +35,7 @@ class RequestHandler(socketserver.StreamRequestHandler):
 			try:
 				data = my_json.loads(line.strip())
 			except ValueError as e:
-				print('Invalid Request', e)
+				logger.warning('Invalid Request', e)
 				continue
 			if data['cmd'] in server_handlers.handlers:
 				res = server_handlers.handlers[data['cmd']](*data.get('args', []), **data.get('kwargs', {}), mgr=config_manager)
@@ -47,7 +54,7 @@ def run_server(args):
 	if not os.path.exists(CONFIG_PATH):
 		os.mkdir(CONFIG_PATH)
 
-	print('Load config...')
+	logger.info('Load config...')
 	for file in os.listdir(CONFIG_PATH):
 		if file.endswith('.json'):
 			account = config_manager.get(file[:-5])
@@ -62,16 +69,16 @@ def run_server(args):
 						assist.migrate_config(cfg[assistant], cfg[assistant]['config_version'])
 						cfg[assistant]['config_version'] = assist.CONFIG_VERSION
 
-	print('Config loaded')
+	logger.info('Config loaded')
 
-	print('Starting server...')
+	logger.info('Starting server...')
 	server = ThreadingServer(SOCKET_NAME, RequestHandler)
 	server_thread = threading.Thread(target=server.serve_forever)
 	server_thread.daemon = True
 	server_thread.start()
-	print('Server started')
+	logger.info('Server started')
 
-	print('Starting telegram...')
+	logger.info('Starting telegram...')
 	my_telegram = telegram.Telegram(config_manager)
 	for account in config_manager:
 		with config_manager.get(account) as (cfg, tmp):
@@ -83,9 +90,9 @@ def run_server(args):
 	config_manager.dummy_configs.add('telegram')
 	with config_manager.get('telegram') as (cfg, tmp):
 		tmp['telegram'] = my_telegram
-	print('Telegram started')
+	logger.info('Telegram started')
 
-	print('Starting runner...')
+	logger.info('Starting runner...')
 	my_runner = runner.Runner(config_manager)
 	runner_thread = threading.Thread(target=my_runner.run_forever)
 	runner_thread.daemon = True
@@ -93,7 +100,7 @@ def run_server(args):
 	config_manager.dummy_configs.add('todoist')
 	with config_manager.get('todoist') as (cfg, tmp):
 		tmp['todoist'] = my_runner
-	print('Runner started')
+	logger.info('Runner started')
 
 	try:
 		while True:
@@ -101,12 +108,12 @@ def run_server(args):
 	except KeyboardInterrupt:
 		pass
 	finally:
-		print('Shutting down runner...')
+		logger.info('Shutting down runner...')
 		my_runner.shutdown()
-		print('Runner shutdown')
-		print('Shutting down telegram...')
+		logger.info('Runner shutdown')
+		logger.info('Shutting down telegram...')
 		my_telegram.shutdown()
-		print('Telegram shutdown')
-		print('Shutting down server...')
+		logger.info('Telegram shutdown')
+		logger.info('Shutting down server...')
 		server.shutdown()
-		print('Server shutdown')
+		logger.info('Server shutdown')

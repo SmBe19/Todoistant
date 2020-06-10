@@ -1,10 +1,13 @@
 import threading
 import datetime
+import logging
 
 import assistants.automover
 import assistants.priosorter
 import assistants.telegram
 import assistants.templates
+
+logger = logging.getLogger(__name__)
 
 ASSISTANTS = {
 	'priosorter': assistants.priosorter,
@@ -46,9 +49,12 @@ class Runner:
 					with self.config_manager.get(userid) as (cfg, tmp):
 						for assistant in ASSISTANTS:
 							if assistant in cfg and cfg[assistant]['enabled']:
-								had_update = ASSISTANTS[assistant].handle_update(tmp['api'], tmp['timezone'], cfg[assistant], tmp.setdefault(assistant, {}), update) or had_update
-				# if had_update:
-				# 	print('Received updates')
+								logger.debug('Check whether %s needs to handle update', assistant)
+								assistant_handle_update = ASSISTANTS[assistant].handle_update(tmp['api'], tmp['timezone'], cfg[assistant], tmp.setdefault(assistant, {}), update)
+								logger.debug('Assistant %s needs update: %s', assistant, assistant_handle_update)
+								had_update = assistant_handle_update or had_update
+				if had_update:
+					logger.debug('Received updates')
 
 				for account in self.config_manager:
 					api_synced = False
@@ -64,9 +70,9 @@ class Runner:
 									if not api_synced:
 										tmp['api'].sync()
 										tmp['api_last_sync'] = datetime.datetime.utcnow()
-									# print('Run', assistant, 'for', account)
+									logger.debug('Run %s for %s', assistant, account)
 									run_now(assistant, cfg, tmp, self.config_manager)
-									# print('Finished', assistant, 'for', account)
+									logger.debug('Finished %s for %s', assistant, account)
 				self.new_update.wait(3 if had_update else 60)
 
 	def receive_update(self, update):

@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 import json
 
 from config import ChangeList
@@ -6,7 +6,9 @@ from config import ChangeList
 
 def json_object_hook(o):
 	if '__datetime__' in o:
-		return datetime.datetime.fromisoformat(o['value'])
+		# return datetime.fromisoformat(o['value'])
+		# python3.6 does not yet support fromisoformat
+		return datetime.strptime(o['value'], '%Y-%m-%dT%H:%M:%S.%f')
 	return o
 
 
@@ -16,7 +18,7 @@ def json_default(o):
 		return o.to_dict()
 	if isinstance(o, ChangeList):
 		return o.to_dict()
-	if isinstance(o, datetime.datetime):
+	if isinstance(o, datetime):
 		return {
 			'__datetime__': True,
 			'value': o.isoformat()
