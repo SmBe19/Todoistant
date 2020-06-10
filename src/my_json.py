@@ -6,9 +6,9 @@ from config import ChangeList
 
 def json_object_hook(o):
 	if '__datetime__' in o:
-		# return datetime.fromisoformat(o['value'])
+		return datetime.fromisoformat(o['value'])
 		# python3.6 does not yet support fromisoformat
-		return datetime.strptime(o['value'], '%Y-%m-%dT%H:%M:%S.%f')
+		# return datetime.strptime(o['value'], '%Y-%m-%dT%H:%M:%S.%f')
 	return o
 
 
