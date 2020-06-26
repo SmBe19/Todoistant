@@ -37,6 +37,12 @@ class Runner:
 		self.update_queue = []
 
 	def run_forever(self):
+		try:
+			self._run_forever()
+		except Exception as e:
+			logger.error('Error in runner: %s', e, exc_info=1)
+
+	def _run_forever(self):
 		self.should_shutdown.clear()
 		with self.new_update:
 			while not self.should_shutdown.is_set():
