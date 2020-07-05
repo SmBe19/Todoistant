@@ -1,14 +1,17 @@
 from datetime import timezone, datetime, timedelta
 import time
+import logging
 
+logger = logging.getLogger(__name__)
 
 def sync_with_retry(tmp):
 	while True:
 		try:
 			tmp['api'].sync()
-			tmp['api_last_sync'] = datetime.datetime.utcnow()
+			tmp['api_last_sync'] = datetime.utcnow()
 			return
-		except Exception:
+		except Exception as e:
+			logger.error('Error in sync: %s', e, exc_info=1)
 			time.sleep(1)
 
 
