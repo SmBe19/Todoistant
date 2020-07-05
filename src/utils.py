@@ -1,4 +1,15 @@
 from datetime import timezone, datetime, timedelta
+import time
+
+
+def sync_with_retry(tmp):
+	while True:
+		try:
+			tmp['api'].sync()
+			tmp['api_last_sync'] = datetime.datetime.utcnow()
+			return
+		except Exception:
+			time.sleep(1)
 
 
 def utc_to_local(date, local_timezone):

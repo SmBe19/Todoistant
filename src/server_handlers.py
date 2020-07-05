@@ -5,6 +5,7 @@ import todoist
 import runner
 import todoist_api
 from assistants import templates
+from utils import sync_with_retry
 
 handlers = {}
 
@@ -16,8 +17,7 @@ def handler(f):
 
 def sync_if_necessary(tmp):
 	if datetime.datetime.utcnow() - tmp['api_last_sync'] > datetime.timedelta(minutes=10):
-		tmp['api'].sync()
-		tmp['api_last_sync'] = datetime.datetime.utcnow()
+		sync_with_retry(tmp)
 
 
 @handler

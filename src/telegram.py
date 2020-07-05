@@ -11,6 +11,7 @@ import my_json
 import runner
 from assistants import templates
 from server_handlers import sync_if_necessary
+from utils import sync_with_retry
 
 logger = logging.getLogger(__name__)
 
@@ -225,8 +226,7 @@ class Telegram:
 				if kind + '_project' not in cfg['telegram']:
 					self.reply(message, 'Sorry, I don\'t know how to handle this type of message.')
 					return
-				tmp['api'].sync()
-				tmp['api_last_sync'] = datetime.utcnow()
+				sync_with_retry(tmp)
 
 				project_id = cfg['telegram'][kind + '_project']
 				labels = cfg['telegram'][kind + '_labels']

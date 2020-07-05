@@ -7,6 +7,8 @@ import assistants.priosorter
 import assistants.telegram
 import assistants.templates
 
+from utils import sync_with_retry
+
 logger = logging.getLogger(__name__)
 
 ASSISTANTS = {
@@ -74,8 +76,7 @@ class Runner:
 							if assistant in cfg and cfg[assistant]['enabled']:
 								if ASSISTANTS[assistant].should_run(tmp['api'], tmp['timezone'], cfg[assistant], tmp.setdefault(assistant, {})):
 									if not api_synced:
-										tmp['api'].sync()
-										tmp['api_last_sync'] = datetime.datetime.utcnow()
+										sync_with_retry(tmp)
 									logger.debug('Run %s for %s', assistant, account)
 									run_now(assistant, cfg, tmp, self.config_manager)
 									logger.debug('Finished %s for %s', assistant, account)
