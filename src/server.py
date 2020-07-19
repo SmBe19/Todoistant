@@ -17,7 +17,11 @@ from consts import SOCKET_NAME, CACHE_PATH, CONFIG_PATH
 
 dotenv.load_dotenv('secrets.env')
 
-logging.basicConfig(filename="todoistant.log", format='%(asctime)s - %(levelname)s - %(name)s - %(message)s', level=logging.DEBUG)
+logging.basicConfig(
+	handlers=[RotatingFileHandler('todoistant.log', maxBytes=1000000, backupCount=10)],
+	format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
+	level=logging.DEBUG
+)
 stream_handler = logging.StreamHandler()
 stream_handler.setLevel(logging.INFO)
 logging.getLogger().addHandler(stream_handler)
