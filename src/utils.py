@@ -63,7 +63,7 @@ def run_every(delta):
 def run_next_in(delta, update_types=None):
 	def f(api, timezone, cfg, tmp, update):
 		if update_types is not None and update['event_name'] not in update_types:
-			return
+			return False
 		new_next_run = datetime.utcnow() + delta
 		if 'next_run' in cfg and cfg['next_run'] and new_next_run > cfg['next_run'] > datetime.utcnow():
 			return False
