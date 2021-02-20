@@ -46,7 +46,7 @@ def run(api, timezone, telegram, cfg, tmp):
 	now = datetime.now(timezone)
 	items = []
 	for item in api.state['items']:
-		if not item.get('due') or item.get('date_completed'):
+		if not item['due'] or item['date_completed']:
 			continue
 		due = datetime.strptime(item['due']['date'].split('T')[0], '%Y-%m-%d')
 		if now.date() == due.date():
