@@ -2,12 +2,16 @@ from datetime import timezone, datetime, timedelta
 import time
 import logging
 
+import todoist_api
+
 logger = logging.getLogger(__name__)
+
 
 def sync_with_retry(tmp):
 	while True:
 		try:
 			tmp['api'].sync()
+			tmp['timezone'] = todoist_api.get_timezone(tmp['api'])
 			tmp['api_last_sync'] = datetime.utcnow()
 			return
 		except Exception as e:
@@ -48,7 +52,7 @@ def parse_task_config(content):
 
 
 def run_every(delta):
-	def f(api, timezone, cfg, tmp):
+	def f(api, tz, cfg, tmp):
 		if 'last_run' not in cfg:
 			return True
 		if 'next_run' in cfg and cfg['next_run'] and datetime.utcnow() > cfg['next_run']:
@@ -61,7 +65,7 @@ def run_every(delta):
 
 
 def run_next_in(delta, update_types=None):
-	def f(api, timezone, cfg, tmp, update):
+	def f(api, tz, cfg, tmp, update):
 		if update_types is not None and update['event_name'] not in update_types:
 			return False
 		new_next_run = datetime.utcnow() + delta

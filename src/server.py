@@ -66,7 +66,8 @@ def run_server(args):
 			account.load()
 			with account as (cfg, tmp):
 				if cfg['enabled']:
-					tmp['api'], tmp['timezone'] = todoist_api.get_api(cfg['token'])
+					tmp['api'] = todoist_api.get_api(cfg['token'])
+					tmp['timezone'] = todoist_api.get_timezone(tmp['api'])
 					tmp['api_last_sync'] = datetime.datetime.utcnow()
 				for assistant in runner.ASSISTANTS:
 					assist = runner.ASSISTANTS[assistant]

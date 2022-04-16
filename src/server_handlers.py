@@ -48,9 +48,10 @@ def enable_account(account, enabled, mgr):
 def set_token(account, token, mgr):
 	if account not in mgr:
 		return 'unknown account'
-	api, timezone = todoist_api.get_api(token)
+	api = todoist_api.get_api(token)
 	if not api.state['user']:
 		return 'bad token'
+	timezone = todoist_api.get_timezone(api)
 	with mgr.get(account) as (cfg, tmp):
 		cfg['enabled'] = True
 		cfg['token'] = token

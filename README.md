@@ -9,3 +9,5 @@ Start the server with `./src/main.py server`. This will start a server listening
 Start the frontend with `./src/main.py frontend` (for debugging, run with `./src/frontend/frontend.py`). You have to setup an OAuth application with Todoist and save the config in `secrets.env`.
 
 To add an account, run `./src/main.py add_account` with your userid. Set the token with `./src/main.py set_token` or use the frontend for OAuth. Then, enable assistants with `./src/main.py enable <userid> <assistant> <true/false>`.
+
+For debugging webhooks, you can use `ssh -R <remote-port>:localhost:8000 -N <server>` to serve your locally running frontend through a web facing server.

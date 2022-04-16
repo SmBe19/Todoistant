@@ -143,7 +143,7 @@ def telegram_connect():
 
 @app.route('/login', methods=['POST'])
 def login():
-	if not app.debug:
+	if not app.debug or not request.form['userid']:
 		return redirect(url_for('index'))
 	session['userid'] = request.form['userid']
 	session['full_name'] = 'Test User'
@@ -228,6 +228,7 @@ def todoist_hook():
 	with Client() as client:
 		client.todoist_hook(request.headers['X-Todoist-Delivery-Id'], request.json)
 	return ''
+
 
 if __name__ == '__main__':
 	app.run(host='0.0.0.0', port=8000, debug=True)

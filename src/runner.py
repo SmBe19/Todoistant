@@ -77,6 +77,7 @@ class Runner:
 								if ASSISTANTS[assistant].should_run(tmp['api'], tmp['timezone'], cfg[assistant], tmp.setdefault(assistant, {})):
 									if not api_synced:
 										sync_with_retry(tmp)
+										api_synced = True
 									logger.debug('Run %s for %s', assistant, account)
 									run_now(assistant, cfg, tmp, self.config_manager)
 									logger.debug('Finished %s for %s', assistant, account)
