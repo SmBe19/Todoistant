@@ -56,7 +56,7 @@ def run(api, timezone, telegram, cfg, tmp):
 	last = cfg.get('last_run', now - timedelta(days=2))
 	next_run = None
 	for item in api.state['items']:
-		if item['date_completed']:
+		if 'date_completed' in item and item['date_completed']:
 			continue
 		if telegram_label['id'] not in item['labels']:
 			continue
