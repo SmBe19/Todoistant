@@ -60,7 +60,7 @@ def run(api, timezone, telegram, cfg, tmp):
 			continue
 		if telegram_label['id'] not in item['labels']:
 			continue
-		due = local_to_utc(datetime.fromisoformat(item['due']['date']).replace(tzinfo=timezone)) if item['due'] else None
+		due = local_to_utc(datetime.fromisoformat(item['due']['date']).replace(tzinfo=timezone)) if 'due' in item and item['due'] else None
 		content, config = parse_task_config(item['content'])
 		if 'telegram-due' in config:
 			new_due = config['telegram-due']

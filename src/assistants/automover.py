@@ -32,7 +32,7 @@ def run(api, timezone, telegram, cfg, tmp):
 
 	now = datetime.now(timezone)
 	for item in api.state['items']:
-		if not item['due'] or item['date_completed']:
+		if 'due' not in item or not item['due'] or item['date_completed']:
 			continue
 		if automove_label['id'] not in item['labels']:
 			continue
