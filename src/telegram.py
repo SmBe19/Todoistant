@@ -333,6 +333,7 @@ class Telegram:
 				if not tmp['telegram_template_id']:
 					return self.change_reply(message, 'Something went wrong...')
 				sync_if_necessary(tmp)
+				self.change_reply(message, 'Template instantiating...')
 				templates.start(tmp['api'], tmp['timezone'], cfg['templates'], tmp.setdefault('templates', {}), tmp['telegram_template_id'], data['project'])
 				self.change_reply(message, 'Template instantiated.')
 

@@ -161,7 +161,8 @@ def get_templates(api, timezone, cfg, tmp):
 def start(api, timezone, cfg, tmp, template_id, project_id):
 	try:
 		template = parse_template(api, timezone, template_id, project_id)
-	except RuntimeError:
+	except RuntimeError as e:
+		logger.error("Failed to parse template:", e)
 		return 'Invalid template'
 	try:
 		update_template_state(api, timezone, cfg, tmp, template)
