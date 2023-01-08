@@ -7,16 +7,16 @@ import client
 os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-def run_frontend(args):
+def run_frontend(args: argparse.Namespace) -> None:
     os.execvp('gunicorn', ['gunicorn', '--bind', '0.0.0.0:{}'.format(args.port), 'src.frontend.frontend:app'])
 
 
-def run_server(args):
+def run_server(args: argparse.Namespace) -> None:
     import server
     server.run_server(args)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description='Manage Todoistant')
     subparsers = parser.add_subparsers(dest='command')
     server = subparsers.add_parser('server')

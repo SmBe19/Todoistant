@@ -1,189 +1,184 @@
 import datetime
+from typing import Callable, Dict, List, Any, Union
 
-import todoist
-
-import runner
-import todoist_api
-from assistants import templates
-from utils import sync_with_retry
+from assistants.assistants import ASSISTANTS
+from config.config import ConfigManager, ChangeDict
+from config.runner_config import RunnerConfig
+from config.telegram_server_config import TelegramServerConfig
+from config.user_config import UserConfig
+from todoistapi import todoist_api
+from todoistapi.hooks import HookData
+from utils.utils import sync_if_necessary
 
 handlers = {}
 
 
-def handler(f):
-	handlers[f.__name__] = f
-	return f
-
-
-def sync_if_necessary(tmp):
-	if datetime.datetime.utcnow() - tmp['api_last_sync'] > datetime.timedelta(minutes=10):
-		sync_with_retry(tmp)
+def handler(f: Callable) -> Callable:
+    handlers[f.__name__] = f
+    return f
 
 
 @handler
-def add_account(account, mgr):
-	if account not in mgr:
-		with mgr.get(account) as (cfg, tmp):
-			cfg['enabled'] = False
-	return 'ok'
+def add_account(account: str, mgr: ConfigManager) -> str:
+    if account not in mgr:
+        with UserConfig.get(mgr, account) as user:
+            user.cfg['enabled'] = False
+    return 'ok'
 
 
 @handler
-def account_exists(account, mgr):
-	return account in mgr
+def account_exists(account: str, mgr: ConfigManager) -> bool:
+    return account in mgr
 
 
 @handler
-def enable_account(account, enabled, mgr):
-	if account not in mgr:
-		return 'unknown account'
-	with mgr.get(account) as (cfg, tmp):
-		if enabled and not cfg['token']:
-			return 'can only enable if token is set'
-		cfg['enabled'] = enabled
-	return 'ok'
+def enable_account(account: str, enabled: bool, mgr: ConfigManager) -> str:
+    if account not in mgr:
+        return 'unknown account'
+    with UserConfig.get(mgr, account) as user:
+        if enabled and not user.token:
+            return 'can only enable if token is set'
+        user.cfg['enabled'] = enabled
+    return 'ok'
 
 
 @handler
-def set_token(account, token, mgr):
-	if account not in mgr:
-		return 'unknown account'
-	api = todoist_api.get_api(token)
-	if not api.state['user']:
-		return 'bad token'
-	timezone = todoist_api.get_timezone(api)
-	with mgr.get(account) as (cfg, tmp):
-		cfg['enabled'] = True
-		cfg['token'] = token
-		tmp['api'] = api
-		tmp['timezone'] = timezone
-		tmp['api_last_sync'] = datetime.datetime.utcnow()
-	return 'ok'
+def set_token(account: str, token: str, mgr: ConfigManager) -> str:
+    if account not in mgr:
+        return 'unknown account'
+    api = todoist_api.get_api(token)
+    if not api.state['user']:
+        return 'bad token'
+    with UserConfig.get(mgr, account) as user:
+        user.cfg['enabled'] = True
+        user.cfg['token'] = token
+        user.tmp['api'] = api
+        user.api_last_sync = datetime.datetime.utcnow()
+    return 'ok'
 
 
 @handler
-def set_enabled(account, assistant, enabled, mgr):
-	if assistant not in runner.ASSISTANTS:
-		return 'unknown assistant'
-	if account not in mgr:
-		return 'unknown account'
-	with mgr.get(account) as (cfg, tmp):
-		if assistant not in cfg:
-			cfg[assistant] = runner.ASSISTANTS[assistant].INIT_CONFIG.copy()
-			cfg[assistant]['config_version'] = runner.ASSISTANTS[assistant].CONFIG_VERSION
-		cfg[assistant]['enabled'] = enabled
-	return 'ok'
+def set_enabled(account: str, assistant: str, enabled: bool, mgr: ConfigManager) -> str:
+    if assistant not in ASSISTANTS:
+        return 'unknown assistant'
+    if account not in mgr:
+        return 'unknown account'
+    with UserConfig.get(mgr, account) as user:
+        if assistant not in user.cfg:
+            user.cfg[assistant] = ASSISTANTS[assistant].get_init_config()
+            user.cfg[assistant]['config_version'] = ASSISTANTS[assistant].get_config_version()
+        user.cfg[assistant]['enabled'] = enabled
+    return 'ok'
 
 
 @handler
-def get_config(account, mgr):
-	if account not in mgr:
-		return None
-	with mgr.get(account) as (cfg, tmp):
-		cfg_dict = cfg.to_dict()
-		del cfg_dict['token']
-		return cfg_dict
+def get_config(account: str, mgr: ConfigManager) -> Union[Dict[str, object], None]:
+    if account not in mgr:
+        return None
+    with UserConfig.get(mgr, account) as user:
+        cfg_dict = user.cfg.to_dict()
+        del cfg_dict['token']
+        return cfg_dict
 
 
 @handler
-def update_config(account, update, mgr):
-	if account not in mgr:
-		return 'unknown account'
+def update_config(account: str, update: Dict[str, Any], mgr: ConfigManager) -> str:
+    if account not in mgr:
+        return 'unknown account'
 
-	def do_update(cfg, upd):
-		for key in upd:
-			if key not in cfg:
-				cfg[key] = upd[key]
-			elif isinstance(upd[key], dict):
-				do_update(cfg[key], upd[key])
-			else:
-				cfg[key] = upd[key]
+    def do_update(cfg: ChangeDict, upd: Dict[str, Any]):
+        for key in upd:
+            if key not in cfg:
+                cfg[key] = upd[key]
+            elif isinstance(upd[key], dict):
+                do_update(cfg[key], upd[key])
+            else:
+                cfg[key] = upd[key]
 
-	with mgr.get(account) as (cfg, tmp):
-		do_update(cfg, update)
+    with UserConfig.get(mgr, account) as user:
+        do_update(user.cfg, update)
 
-	return 'ok'
-
-
-@handler
-def get_projects(account, mgr):
-	if account not in mgr:
-		return None
-	with mgr.get(account) as (cfg, tmp):
-		sync_if_necessary(tmp)
-		return [{
-			'name': project['name'],
-			'id': project['id'],
-		} for project in tmp['api'].state['projects']]
+    return 'ok'
 
 
 @handler
-def get_labels(account, mgr):
-	if account not in mgr:
-		return None
-	with mgr.get(account) as (cfg, tmp):
-		sync_if_necessary(tmp)
-		return [{
-			'name': project['name'],
-			'id': project['id'],
-		} for project in tmp['api'].state['labels']]
+def get_projects(account: str, mgr: ConfigManager) -> Union[List[object], None]:
+    if account not in mgr:
+        return None
+    with UserConfig.get(mgr, account) as user:
+        sync_if_necessary(user)
+        return [{
+            'name': project['name'],
+            'id': project['id'],
+        } for project in user.api.projects]
 
 
 @handler
-def get_templates(account, mgr):
-	if account not in mgr:
-		return None
-	with mgr.get(account) as (cfg, tmp):
-		sync_if_necessary(tmp)
-		if 'templates' not in cfg:
-			return []
-		return templates.get_templates(tmp['api'], tmp['timezone'], cfg['templates'], tmp.setdefault('templates', {}))
+def get_labels(account: str, mgr: ConfigManager) -> Union[List[object], None]:
+    if account not in mgr:
+        return None
+    with UserConfig.get(mgr, account) as user:
+        sync_if_necessary(user)
+        return [{
+            'name': project['name'],
+            'id': project['id'],
+        } for project in user.api.labels]
 
 
 @handler
-def start_template(account, template, project, mgr):
-	if account not in mgr:
-		return None
-	with mgr.get(account) as (cfg, tmp):
-		sync_if_necessary(tmp)
-		templates.start(tmp['api'], tmp['timezone'], cfg['templates'], tmp.setdefault('templates', {}), template, project)
-	return 'ok'
+def get_templates(account: str, mgr: ConfigManager) -> Union[List[object], None]:
+    if account not in mgr:
+        return None
+    with UserConfig.get(mgr, account) as user:
+        sync_if_necessary(user)
+        if 'templates' not in user.cfg:
+            return []
+        return ASSISTANTS.templates.get_templates(user)
 
 
 @handler
-def telegram_update(token, update, mgr):
-	with mgr.get('telegram') as (cfg, tmp):
-		tmp['telegram'].receive(token, update)
-	return 'ok'
+def start_template(account: str, template: str, project: str, mgr: ConfigManager) -> Union[str, None]:
+    if account not in mgr:
+        return None
+    with UserConfig.get(mgr, account) as user:
+        sync_if_necessary(user)
+        ASSISTANTS.templates.start(user, template, project)
+    return 'ok'
 
 
 @handler
-def telegram_disconnect(account, mgr):
-	if account not in mgr:
-		return 'unknown account'
-
-	with mgr.get(account) as (cfg, tmp):
-		with mgr.get('telegram') as (tcfg, ttmp):
-			ttmp['telegram'].send_message(cfg['telegram']['chatid'], 'Account was disconnected.')
-			del ttmp['telegram'].chat_to_user[cfg['telegram']['chatid']]
-		cfg['telegram']['chatid'] = 0
-		cfg['telegram']['username'] = ''
-	return 'ok'
+def telegram_update(token: str, update: Any, mgr: ConfigManager) -> str:
+    with TelegramServerConfig.get(mgr) as telegram_cfg:
+        telegram_cfg.telegram.receive(token, update)
+    return 'ok'
 
 
 @handler
-def telegram_connect(account, code, mgr):
-	with mgr.get('telegram') as (cfg, tmp):
-		return tmp['telegram'].finish_register(account, code)
+def telegram_disconnect(account: str, mgr: ConfigManager) -> str:
+    if account not in mgr:
+        return 'unknown account'
+
+    with UserConfig.get(mgr, account) as user:
+        chatid = user.cfg['telegram']['chatid']
+        with TelegramServerConfig.get(mgr) as telegram_cfg:
+            telegram_cfg.telegram.send_message(chatid, 'Account was disconnected.')
+            del telegram_cfg.telegram.chat_to_user[chatid]
+        user.cfg['telegram']['chatid'] = 0
+        user.cfg['telegram']['username'] = ''
+    return 'ok'
 
 
 @handler
-def todoist_hook(hook_id, hook_data, mgr):
-	with mgr.get('todoist') as (cfg, tmp):
-		if 'processed_hooks' not in tmp:
-			tmp['processed_hooks'] = set()
-		if hook_id in tmp['processed_hooks']:
-			return 'ok'
-		tmp['processed_hooks'].add(hook_id)
-		tmp['todoist'].receive_update(hook_data)
-		return 'ok'
+def telegram_connect(account: str, code: str, mgr: ConfigManager) -> str:
+    with TelegramServerConfig.get(mgr) as telegram_cfg:
+        return telegram_cfg.telegram.finish_register(account, code)
+
+
+@handler
+def todoist_hook(hook_id: str, hook_data: Dict[str, object], mgr: ConfigManager) -> str:
+    with RunnerConfig.get(mgr) as runner_cfg:
+        if hook_id in runner_cfg.processed_hooks:
+            return 'ok'
+        runner_cfg.processed_hooks.add(hook_id)
+        runner_cfg.runner.receive_update(HookData(hook_data))
+        return 'ok'

@@ -1,8 +1,9 @@
 venv
-cache
-config
+/cache
+/config
 __pycache__
 .idea
 secrets.env
 todoistant.sock
 *.log
+*.log.*
