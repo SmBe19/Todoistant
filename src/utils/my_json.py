@@ -1,3 +1,5 @@
+import dataclasses
+import importlib
 import json
 from datetime import datetime
 from typing import Any, Union
@@ -6,8 +8,10 @@ from typing import Any, Union
 def json_object_hook(o: Any) -> Any:
     if '__datetime__' in o:
         return datetime.fromisoformat(o['value'])
-    # python3.6 does not yet support fromisoformat
-    # return datetime.strptime(o['value'], '%Y-%m-%dT%H:%M:%S.%f')
+    if '__dataclass__' in o:
+        module = importlib.import_module(o['__dataclass__'][0])
+        klass = getattr(module, o['__dataclass__'][1])
+        return klass(**o['value'])
     return o
 
 
@@ -21,6 +25,11 @@ def json_default(o: Any) -> Any:
         return {
             '__datetime__': True,
             'value': o.isoformat()
+        }
+    if dataclasses.is_dataclass(o):
+        return {
+            '__dataclass__': [type(o).__module__, type(o).__qualname__],
+            'value': dataclasses.asdict(o)
         }
     raise TypeError
 

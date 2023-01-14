@@ -10,10 +10,10 @@ import dotenv
 import requests
 from flask import Flask, render_template, session, redirect, url_for, request, flash
 
-from assistants.assistants import ASSISTANTS
-
 sys.path.append(os.path.abspath('src'))
 
+from todoistapi.todoist_api import get_api
+from assistants.assistants import ASSISTANTS
 from utils.utils import utc_to_local
 from client import Client
 
@@ -68,7 +68,7 @@ def config() -> object:
     with Client() as client:
         current_config = client.get_config(session['userid'])
         enabled = {}
-        for assistant in ASSISTANTS:
+        for assistant in ASSISTANTS.keys():
             enabled[assistant] = assistant in current_config and current_config[assistant]['enabled']
         projects = client.get_projects(session['userid'])
         labels = client.get_labels(session['userid'])
@@ -81,7 +81,7 @@ def config() -> object:
 def update_config(assistant: str) -> object:
     if 'userid' not in session:
         return redirect(url_for('index'))
-    if assistant not in ASSISTANTS:
+    if assistant not in ASSISTANTS.keys():
         flash('Unknown assistant ' + assistant)
         return redirect(url_for('config'))
     assist = ASSISTANTS[assistant]
@@ -200,22 +200,18 @@ def oauth_callback() -> object:
     if 'error' in res:
         return fail('OAuth failed: ' + res['error'])
     token = res['access_token']
-    userinfo = requests.post('https://api.todoist.com/sync/v8/sync', data={
-        'token': token,
-        'sync_token': '*',
-        'resource_types': '["user"]',
-    }).json()['user']
-    userid = userinfo['id']
+    api = get_api(token, sync=False, cache=False)
+    api.sync_user_info()
     with Client() as client:
-        if not client.account_exists(userid):
-            return fail('Account is not known. Ask the admin to add your userid: ' + str(userid))
-        res = client.set_token(userid, token)
+        if not client.account_exists(api.user.id):
+            return fail('Account is not known. Ask the admin to add your userid: ' + str(api.user.id))
+        res = client.set_token(api.user.id, token)
         if res != 'ok':
             return fail('Setting token failed: ' + res)
-    session['userid'] = userid
-    session['full_name'] = userinfo['full_name']
-    session['avatar'] = userinfo['avatar_big']
-    session['timezone'] = userinfo['tz_info']
+    session['userid'] = api.user.id
+    session['full_name'] = api.user.full_name
+    session['avatar'] = api.user.avatar_big
+    session['timezone'] = api.user.tz_info
     return redirect(url_for('config'))
 
 

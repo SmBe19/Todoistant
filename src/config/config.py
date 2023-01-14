@@ -1,7 +1,8 @@
+import dataclasses
 import logging
 import os
 import threading
-from typing import Iterator, Dict, Set, List, Any
+from typing import Iterator, Dict, Set, List, Any, Union
 
 from utils import my_json
 from utils.consts import CONFIG_PATH
@@ -27,7 +28,6 @@ class ConfigManager:
             items = [x for x in self._configs.keys() if x not in self.dummy_configs]
         return iter(items)
 
-    # TODO replace usages
     def get(self, key: object) -> 'Config':
         logger.debug('Config Manager get %s', key)
         with self._lock:
@@ -42,9 +42,14 @@ def wrap_in_change(value: object, root: 'ChangeDict') -> object:
         return ChangeDict(value, root=root)
     if isinstance(value, list):
         return ChangeList(value, root=root)
-    if hasattr(value.__class__, '__dataclass_fields__'):
-        # TODO handle dataclasses
-        return ChangeDict({}, root=root)
+    if dataclasses.is_dataclass(value):
+        return ChangeDict(dataclasses.asdict(value), root=root)
+    return value
+
+
+def ensure_plain_list(value: Union[List[Any], 'ChangeList']) -> List[Any]:
+    if isinstance(value, ChangeList):
+        return value.to_dict()
     return value
 
 
@@ -70,9 +75,11 @@ class ChangeDict:
     def __getattr__(self, item: str) -> Any:
         if not self._root._valid:
             raise RuntimeError()
+        if item not in self._data:
+            raise AttributeError(item)
         return self._data[item]
 
-    def get(self, item: str, default: object = None) -> object:
+    def get(self, item: str, default: object = None) -> Any:
         if not self._root._valid:
             raise RuntimeError()
         return self._data.get(item, default)
@@ -160,13 +167,13 @@ class Config:
     def load(self) -> None:
         logger.debug('Load config %s', self.key)
         with self._lock:
-            with open(os.path.join(CONFIG_PATH, '{}.json'.format(self.key)), 'r') as f:
+            with open(os.path.join(CONFIG_PATH, f'{self.key}.json'), 'r') as f:
                 self._data = ChangeDict(my_json.load(f))
 
     def save(self) -> None:
         logger.debug('Save config %s', self.key)
         with self._lock:
-            with open(os.path.join(CONFIG_PATH, '{}.json'.format(self.key)), 'w') as f:
+            with open(os.path.join(CONFIG_PATH, f'{self.key}.json'), 'w') as f:
                 my_json.dump(self._data, f)
             self._data.changed = False
 

@@ -47,7 +47,7 @@ def set_token(account: str, token: str, mgr: ConfigManager) -> str:
     if account not in mgr:
         return 'unknown account'
     api = todoist_api.get_api(token)
-    if not api.state['user']:
+    if not api.had_successful_sync():
         return 'bad token'
     with UserConfig.get(mgr, account) as user:
         user.cfg['enabled'] = True
@@ -108,8 +108,8 @@ def get_projects(account: str, mgr: ConfigManager) -> Union[List[object], None]:
     with UserConfig.get(mgr, account) as user:
         sync_if_necessary(user)
         return [{
-            'name': project['name'],
-            'id': project['id'],
+            'name': project.name,
+            'id': project.id,
         } for project in user.api.projects]
 
 
@@ -120,8 +120,8 @@ def get_labels(account: str, mgr: ConfigManager) -> Union[List[object], None]:
     with UserConfig.get(mgr, account) as user:
         sync_if_necessary(user)
         return [{
-            'name': project['name'],
-            'id': project['id'],
+            'name': project.name,
+            'id': project.id,
         } for project in user.api.labels]
 
 

@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Iterable, Callable
 
-from config.config import ChangeDict
-from config.user_config import UserConfig
+from config import config, user_config
 from todoistapi.hooks import HookData
 
 
@@ -16,21 +15,21 @@ class Assistant(ABC):
         pass
 
     @abstractmethod
-    def should_run(self, user: UserConfig) -> bool:
+    def should_run(self, user: 'user_config.UserConfig') -> bool:
         pass
 
     @abstractmethod
-    def handle_update(self, user: UserConfig, update: HookData) -> bool:
+    def handle_update(self, user: 'user_config.UserConfig', update: HookData) -> bool:
         pass
 
     @abstractmethod
-    def run(self, user: UserConfig, send_telegram: Callable[[str], None]) -> None:
+    def run(self, user: 'user_config.UserConfig', send_telegram: Callable[[str], None]) -> None:
         pass
 
     def get_config_version(self) -> int:
         return 1
 
-    def migrate_config(self, cfg: ChangeDict, old_version: int) -> None:
+    def migrate_config(self, user: 'user_config.UserConfig', cfg: 'config.ChangeDict', old_version: int) -> None:
         pass
 
     def get_init_config(self) -> Dict[str, object]:

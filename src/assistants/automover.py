@@ -6,6 +6,8 @@ from config.user_config import UserConfig
 from todoistapi.hooks import HookData
 from utils.utils import parse_task_config, utc_to_local
 
+LABEL_NAME: str = 'automove'
+
 
 class AutoMover(Assistant):
 
@@ -21,25 +23,20 @@ class AutoMover(Assistant):
         return False
 
     def run(self, user: UserConfig, send_telegram: Callable[[str], None]) -> None:
-        automove_label = None
-        for label in user.api.state['labels']:
-            if label['name'] == 'automove':
-                automove_label = label
-                break
-        if not automove_label:
+        if not user.api.labels.get_by_name(LABEL_NAME):
             return
 
         now = datetime.now(user.timezone)
-        for item in user.api.state['items']:
-            if 'due' not in item or not item['due'] or ('date_completed' in item and item['date_completed']):
+        for item in user.api.items:
+            if not item.due.is_set() or item.checked:
                 continue
-            if automove_label['id'] not in item['labels']:
+            if LABEL_NAME not in item.labels:
                 continue
-            due = datetime.strptime(item['due']['date'].split('T')[0], '%Y-%m-%d')
+            due = item.due.parsed_day
             if now.date() > due.date():
-                content, config = parse_task_config(item['content'])
-                if 'T' in item['due']['date']:
-                    timepart = 'T' + item['due']['date'].split('T', 1)[1]
+                content, config = parse_task_config(item.content)
+                if 'T' in item.due.date:
+                    timepart = 'T' + item.due.date.split('T', 1)[1]
                 else:
                     timepart = ''
                 nowstr = now.strftime('%Y-%m-%d')
@@ -51,7 +48,5 @@ class AutoMover(Assistant):
                     except ValueError as e:
                         send_telegram('Error with {}: {}.'.format(content, e))
                         continue
-                new_due = item['due']
-                new_due['date'] = nowstr + timepart
-                item.update(due=new_due)
+                item.due.date = nowstr + timepart
         user.api.commit()

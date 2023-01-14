@@ -43,6 +43,7 @@ class TelegramServer:
         self.should_shutdown: threading.Event = threading.Event()
         self.new_update: threading.Condition = threading.Condition()
         self.config_manager: ConfigManager = config_manager
+        self.session: requests.Session = requests.Session()
         self.update_queue: List[Any] = []
         self.message_queue: List[(str, str)] = []
         self.processed_updates: Set[str] = set()
@@ -71,7 +72,7 @@ class TelegramServer:
     def post(self, method: str, **data) -> Any:
         if not data:
             data = {}
-        res = requests.post('https://api.telegram.org/bot{}/{}'.format(self.bot_token, method), json=data).json()
+        res = self.session.post('https://api.telegram.org/bot{}/{}'.format(self.bot_token, method), json=data).json()
         if not res['ok']:
             logger.warning('Error: %s', res['description'])
             raise RuntimeError()
@@ -104,10 +105,10 @@ class TelegramServer:
         sync_if_necessary(user)
         project_buttons = [
             {
-                'text': project['name'],
+                'text': project.name,
                 'callback_data': my_json.dumps({
                     'cmd': cmd,
-                    'project': project['id'],
+                    'project': project.id,
                 }),
             } for project in user.api.projects]
         return self.buttons_in_rows(project_buttons, 2)
@@ -116,10 +117,10 @@ class TelegramServer:
         sync_if_necessary(user)
         label_buttons = [
             {
-                'text': '{} (on)'.format(label['name']) if label['id'] in active else label['name'],
+                'text': '{} (on)'.format(label.name) if label.name in active else label.name,
                 'callback_data': my_json.dumps({
                     'cmd': cmd,
-                    'label': label['id'],
+                    'label': label.name,
                 }),
             } for label in user.api.labels]
         label_buttons.append({
@@ -189,7 +190,7 @@ class TelegramServer:
             if 'telegram_last_task' not in user.tmp:
                 return self.reply(message, 'No task was added so far.')
             self.reply_keyboard(message, 'Choose labels:',
-                                self.create_label_buttons(user, 'labels', user.tmp['telegram_last_task']['labels']))
+                                self.create_label_buttons(user, 'labels', user.tmp['telegram_last_task'].labels))
 
     @help('Change the default labels')
     @require_register
@@ -217,10 +218,10 @@ class TelegramServer:
                 return self.reply(message, 'Templates are not enabled.')
             my_templates = ASSISTANTS.templates.get_templates(user)
             template_buttons = [{
-                'text': template['name'],
+                'text': template.name,
                 'callback_data': my_json.dumps({
                     'cmd': 'template',
-                    'template': template['id'],
+                    'template': template.id,
                 })
             } for template in my_templates]
             self.reply_keyboard(message, 'Choose template:', self.buttons_in_rows(template_buttons, 2))
@@ -252,9 +253,11 @@ class TelegramServer:
                     project_id = user.tmp.get('telegram_default_project', project_id)
                     labels = user.tmp.get('telegram_default_labels', labels)
 
-                new_task = user.api.items.add(prefix + message['text'], project_id=project_id)
-                new_task.update(labels=labels[:])
-                new_task.update(due={'string': 'today'})
+                new_task = user.api.items.add(
+                    prefix + message['text'],
+                    project_id=project_id,
+                    labels=labels[:],
+                    due={'string': 'today'})
                 user.api.commit()
                 runner.run_now(ASSISTANTS.priosorter, user, self.config_manager)
                 user.tmp['telegram_last_task'] = new_task
@@ -318,12 +321,12 @@ class TelegramServer:
                 if data['label'] == -1:
                     self.change_reply(message, 'Done.')
                 else:
-                    labels = user.tmp['telegram_last_task']['labels'][:]
+                    labels = user.tmp['telegram_last_task'].labels[:]
                     if data['label'] in labels:
                         labels.remove(data['label'])
                     else:
                         labels.append(data['label'])
-                    user.tmp['telegram_last_task'].update(labels=labels)
+                    user.tmp['telegram_last_task'].labels = labels
                     user.api.commit()
                     self.change_keyboard(message, 'Choose labels:', self.create_label_buttons(user, 'labels', labels))
         elif data['cmd'] == 'default_project':
@@ -341,9 +344,9 @@ class TelegramServer:
                         user.tmp['telegram_default_labels'].remove(data['label'])
                     else:
                         user.tmp['telegram_default_labels'].append(data['label'])
-                        self.change_keyboard(message, 'Choose default labels for next 20 minutes:',
-                                             self.create_label_buttons(user, 'default_labels',
-                                                                       user.tmp['telegram_default_labels']))
+                    self.change_keyboard(message, 'Choose default labels for next 20 minutes:',
+                                         self.create_label_buttons(user, 'default_labels',
+                                                                   user.tmp['telegram_default_labels']))
         elif data['cmd'] == 'template':
             with UserConfig.get(self.config_manager, userid) as user:
                 user.tmp['telegram_template_id'] = data['template']

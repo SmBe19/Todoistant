@@ -3,25 +3,25 @@ import time
 from datetime import timezone, datetime, timedelta
 from typing import Callable, Set, Dict
 
-from config.user_config import UserConfig
+from config import user_config
 from todoistapi.hooks import HookData
 
 logger = logging.getLogger(__name__)
 
 
-def sync_if_necessary(user: UserConfig):
+def sync_if_necessary(user: 'user_config.UserConfig'):
     if datetime.utcnow() - user.api_last_sync > timedelta(minutes=10):
         sync_with_retry(user)
 
 
-def sync_with_retry(user: UserConfig):
+def sync_with_retry(user: 'user_config.UserConfig'):
     while True:
         try:
             user.api.sync()
             user.api_last_sync = datetime.utcnow()
             return
         except Exception as e:
-            logger.error('Error in sync: %s', e, exc_info=1)
+            logger.error('Error in sync', exc_info=e)
             time.sleep(1)
 
 
@@ -39,10 +39,10 @@ def local_to_utc(date: datetime) -> datetime:
 
 def parse_task_config(content: str) -> (str, Dict[str, str]):
     pattern = '[ ]('
-    pos = content.find('[ ](')
+    pos = content.find(pattern)
     if pos < 0:
         pattern = '!!('
-        pos = content.find('!!(')
+        pos = content.find(pattern)
         if pos < 0:
             return content, {}
     endpos = content[pos:].find(')')
@@ -58,7 +58,7 @@ def parse_task_config(content: str) -> (str, Dict[str, str]):
 
 
 def run_every(delta: timedelta) -> Callable:
-    def should_run(self, user: UserConfig) -> bool:
+    def should_run(self, user: 'user_config.UserConfig') -> bool:
         cfg = user.acfg(self)
         if 'last_run' not in cfg:
             return True
@@ -73,7 +73,7 @@ def run_every(delta: timedelta) -> Callable:
 
 
 def run_next_in(delta: timedelta, update_types: Set[str] = None) -> Callable:
-    def handle_update(self, user: UserConfig, update: HookData) -> bool:
+    def handle_update(self, user: 'user_config.UserConfig', update: HookData) -> bool:
         cfg = user.acfg(self)
         if update_types is not None and update.data['event_name'] not in update_types:
             return False

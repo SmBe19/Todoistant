@@ -13,7 +13,6 @@ class TelegramServerConfig(ConfigWrapper):
     def get(mgr: ConfigManager) -> 'TelegramServerConfig':
         return TelegramServerConfig(mgr.get('telegram'))
 
-    # TODO fix typing hint
     @property
     def telegram(self) -> 'telegram.telegram_server.TelegramServer':
         return cast('telegram.telegram_server.TelegramServer', self._tmp['telegram'])

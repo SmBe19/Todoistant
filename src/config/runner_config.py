@@ -12,7 +12,7 @@ class RunnerConfig(ConfigWrapper):
 
     @staticmethod
     def get(mgr: ConfigManager) -> 'RunnerConfig':
-        return RunnerConfig(mgr.get('todoist'))
+        return RunnerConfig(mgr.get('runner'))
 
     @property
     def processed_hooks(self) -> Set[str]:

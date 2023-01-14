@@ -8,7 +8,7 @@ os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def run_frontend(args: argparse.Namespace) -> None:
-    os.execvp('gunicorn', ['gunicorn', '--bind', '0.0.0.0:{}'.format(args.port), 'src.frontend.frontend:app'])
+    os.execvp('gunicorn', ['gunicorn', '--bind', f'0.0.0.0:{args.port}', 'src.frontend.frontend:app'])
 
 
 def run_server(args: argparse.Namespace) -> None:

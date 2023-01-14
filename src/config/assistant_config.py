@@ -23,7 +23,7 @@ class AssistantConfig:
 
     @property
     def enabled(self) -> bool:
-        return self._cfg['enabled']
+        return bool(self._cfg) and self._cfg['enabled']
 
     @property
     def last_run(self) -> datetime.datetime:

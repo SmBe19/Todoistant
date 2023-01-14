@@ -13,6 +13,7 @@ import runner
 import server_handlers
 from assistants.assistants import ASSISTANTS
 from config.config import ConfigManager
+from config.user_config import UserConfig
 from telegram.telegram_server import TelegramServer
 from todoistapi import todoist_api
 from utils import my_json
@@ -67,16 +68,26 @@ def init_config() -> None:
     logger.info('Load config...')
     for file in os.listdir(CONFIG_PATH):
         if file.endswith('.json'):
-            account = config_manager.get(file[:-5])
+            userid = file[:-5]
+            logger.info('Load config for user %s...', userid)
+            account = config_manager.get(userid)
             account.load()
             with account as (cfg, tmp):
                 if cfg['enabled']:
                     tmp['api'] = todoist_api.get_api(cfg['token'])
                     tmp['api_last_sync'] = datetime.datetime.utcnow()
+            with UserConfig.get(config_manager, userid) as user:
                 for assistant in ASSISTANTS:
-                    if assistant in cfg and cfg[assistant]['config_version'] < assistant.CONFIG_VERSION:
-                        assistant.migrate_config(cfg[assistant], cfg[assistant]['config_version'])
-                        cfg[assistant]['config_version'] = assistant.CONFIG_VERSION
+                    acfg = user.acfg(assistant)
+                    if not acfg.enabled:
+                        continue
+                    old_version = acfg['config_version']
+                    if old_version < assistant.get_config_version():
+                        logger.info('Migrate %s from config version %s to %s', assistant,
+                                    old_version, assistant.get_config_version())
+                        assistant.migrate_config(user, acfg, old_version)
+                        acfg['config_version'] = assistant.get_config_version()
+            logger.info('Config loaded for user %s...', userid)
     logger.info('Config loaded')
 
 

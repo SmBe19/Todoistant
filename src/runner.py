@@ -39,7 +39,7 @@ class Runner:
         try:
             self._run_forever()
         except Exception as e:
-            logger.error('Error in runner: %s', e, exc_info=1)
+            logger.error('Error in runner', exc_info=e)
 
     def _run_forever(self) -> None:
         self.should_shutdown.clear()

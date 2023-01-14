@@ -1,199 +1,222 @@
 {% extends "base.html" %}
 {% block title %}Config{% endblock %}
 {% block content %}
-<div class="d-md-flex align-items-center justify-content-between">
-    <div>
-        <h1>Todoistant</h1>
-        <div class="text-muted">Your assistant for <a href="https://todoist.com">Todoist.</a></div>
-    </div>
-    <div class="d-flex align-items-center">
-        <form action="{{ url_for('logout') }}" method="post">
-            <button class="btn btn-sm btn-outline-secondary" type="submit">Logout</button>
-        </form>
-        <div class="ml-3">
-            Hello {{ session.full_name }}.
+    <div class="d-md-flex align-items-center justify-content-between">
+        <div>
+            <h1>Todoistant</h1>
+            <div class="text-muted">Your assistant for <a href="https://todoist.com">Todoist.</a></div>
         </div>
-        <div class="ml-3">
-            <img style="height: 4em" src="{{ session.avatar }}" alt="avatar"/>
-        </div>
-    </div>
-</div>
-{% macro enable_disable(assistant) -%}
-{% set enabled = enabled[assistant] %}
-<div>
-    <form action="{{ url_for('update_config', assistant=assistant) }}" method="post">
-        <input type="hidden" name="enabled" value="{{ 'false' if enabled else 'true' }}"/>
-        <button class="btn {{ 'btn-warning' if enabled else 'btn-primary' }}" type="submit">{{ 'Disable' if enabled else 'Enable' }}</button>
-    </form>
-</div>
-{%- endmacro %}
-<div class="my-5">
-    <h2>Smart Templates</h2>
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <div class="mb-3">Instantiate templates, with many features to specify dependencies and control the instantiated templates. Use the config keys 'template-id' and 'template-depends' to specify dependencies (use | to separate several dependencies). Use 'template-due' to specify the desired relative due date (in English).</div>
-            {% if config.templates %}
-            <div>Last Run: {{ config.templates.last_run|format_datetime }}</div>
-            {% if enabled.templates %}
-            <div class="mt-3">
-                {% for active in config.templates.active|sort(attribute='status,start') %}
-                <div><b>{{ active.template }} ({{ active.start|format_datetime }})</b>: {{ active.status }}</div>
-                {% endfor %}
+        <div class="d-flex align-items-center">
+            <form action="{{ url_for('logout') }}" method="post">
+                <button class="btn btn-sm btn-outline-secondary" type="submit">Logout</button>
+            </form>
+            <div class="ml-3">
+                Hello {{ session.full_name }}.
             </div>
-            {% endif %}
-            {% endif %}
+            <div class="ml-3">
+                <img style="height: 4em" src="{{ session.avatar }}" alt="avatar"/>
+            </div>
         </div>
-        <div class="col-md-6">
-            {{ enable_disable('templates') }}
-            {% if enabled.templates %}
-            <div class="mt-3">
-                <form class="form-inline" action="{{ url_for('update_config', assistant='templates') }}" method="post">
-                    <div class="form-group mr-2">
-                        <label class="mr-2" for="templates_src_project">Templates Project</label>
-                        <select class="form-control" name="src_project" id="templates_src_project">
-                            {% for project in projects %}
-                            <option value="{{ project.id }}" {{ 'selected' if config.templates.src_project == project.id else '' }}>{{ project.name }}</option>
+    </div>
+    {% macro enable_disable(assistant) -%}
+        {% set enabled = enabled[assistant] %}
+        <div>
+            <form action="{{ url_for('update_config', assistant=assistant) }}" method="post">
+                <input type="hidden" name="enabled" value="{{ 'false' if enabled else 'true' }}"/>
+                <button class="btn {{ 'btn-warning' if enabled else 'btn-primary' }}"
+                        type="submit">{{ 'Disable' if enabled else 'Enable' }}</button>
+            </form>
+        </div>
+    {%- endmacro %}
+    <div class="my-5">
+        <h2>Smart Templates</h2>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="mb-3">Instantiate templates, with many features to specify dependencies and control the
+                    instantiated templates. Use the config keys 'template-id' and 'template-depends' to specify
+                    dependencies (use | to separate several dependencies). Use 'template-due' to specify the desired
+                    relative due date (in English).
+                </div>
+                {% if config.templates %}
+                    <div>Last Run: {{ config.templates.last_run|format_datetime }}</div>
+                    {% if enabled.templates %}
+                        <div class="mt-3">
+                            {% for active in config.templates.active|sort(attribute='status,start') %}
+                                <div><b>{{ active.template }}
+                                    ({{ active.start|format_datetime }})</b>: {{ active.status }}</div>
                             {% endfor %}
-                        </select>
-                    </div>
-                    <button class="btn btn-primary" type="submit">Save</button>
-                </form>
+                        </div>
+                    {% endif %}
+                {% endif %}
             </div>
-            {% endif %}
-            {% if templates and enabled.templates %}
-            <div class="mt-3">
-                <form class="form-inline" action="{{ url_for('start_template') }}" method="post">
-                    <div class="form-group mr-2">
-                        <label class="sr-only" for="start_template_id">Template</label>
-                        <select class="form-control" name="template_id" id="start_template_id">
-                            {% for template in templates %}
-                            <option value="{{ template.id }}">{{ template.name }}</option>
-                            {% endfor %}
-                        </select>
+            <div class="col-md-6">
+                {{ enable_disable('templates') }}
+                {% if enabled.templates %}
+                    <div class="mt-3">
+                        <form class="form-inline" action="{{ url_for('update_config', assistant='templates') }}"
+                              method="post">
+                            <div class="form-group mr-2">
+                                <label class="mr-2" for="templates_src_project">Templates Project</label>
+                                <select class="form-control" name="src_project" id="templates_src_project">
+                                    {% for project in projects %}
+                                        <option value="{{ project.id }}" {{ 'selected' if config.templates.src_project == project.id else '' }}>{{ project.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" type="submit">Save</button>
+                        </form>
                     </div>
-                    <div class="mr-2">-></div>
-                    <div class="form-group mr-2">
-                        <label class="sr-only" for="start_template_project_id">Project</label>
-                        <select class="form-control" name="project_id" id="start_template_project_id">
-                            {% for project in projects %}
-                            <option value="{{ project.id }}">{{ project.name }}</option>
-                            {% endfor %}
-                        </select>
+                {% endif %}
+                {% if templates and enabled.templates %}
+                    <div class="mt-3">
+                        <form class="form-inline" action="{{ url_for('start_template') }}" method="post">
+                            <div class="form-group mr-2">
+                                <label class="sr-only" for="start_template_id">Template</label>
+                                <select class="form-control" name="template_id" id="start_template_id">
+                                    {% for template in templates %}
+                                        <option value="{{ template.id }}">{{ template.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mr-2">-></div>
+                            <div class="form-group mr-2">
+                                <label class="sr-only" for="start_template_project_id">Project</label>
+                                <select class="form-control" name="project_id" id="start_template_project_id">
+                                    {% for project in projects %}
+                                        <option value="{{ project.id }}">{{ project.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" type="submit">Start Template</button>
+                        </form>
                     </div>
-                    <button class="btn btn-primary" type="submit">Start Template</button>
-                </form>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-</div>
-<div class="my-5">
-    <h2>Auto-Move</h2>
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <div class="mb-3">Automatically move items that are overdue to the next day. Mark items that should be moved with a '@automove' label. Use the config key 'automove-by' to move an item by more than one day.</div>
-            {% if config.automover %}
-            <div>Last Run: {{ config.automover.last_run|format_datetime }}</div>
-            {% endif %}
-        </div>
-        <div class="col-md-6">
-            {{ enable_disable('automover') }}
-            <div class="mt-3">
-                {{ '@automove found' if 'automove' in labels|map(attribute='name') else '@automove not found' }}
-            </div>
-        </div>
-    </div>
-</div>
-<div class="my-5">
-    <h2>Prio-Sorter</h2>
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <div class="mb-3">Add a '@prio#' label to a task to assign it a certain priority (replace '#' by any positive or negative number). Today's tasks will be sorted by this priority every 15 minutes.</div>
-            {% if config.priosorter %}
-            <div>Last Run: {{ config.priosorter.last_run|format_datetime }}</div>
-            {% endif %}
-        </div>
-        <div class="col-md-6">
-            {{ enable_disable('priosorter') }}
-            <div class="mt-3">
-                Found labels: {{ labels|map(attribute='name')|select('prio_label')|join(', ') }}
+                {% endif %}
             </div>
         </div>
     </div>
-</div>
-<div class="my-5">
-    <h2>Telegram Bot</h2>
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <div class="mb-3">Connect with <a href="https://t.me/todoistant_bot">@todoistant_bot</a> on Telegram. All messages sent to it will be added as tasks. You can set different projects and labels depending on whether the message was forwarded, contains a link, or is a plain message.<br/>Mark a message with the @telegram label to receive a message when the task is due. You can use a different due date by using the config key 'telegram-due' with a time (HH:MM) or an ISO datetime (YYYY-mm-ddTHH:MM).</div>
-            {% if enabled.telegram %}
-            {% if config.telegram.chatid > 0 %}
-            <div class="mt-3">Last Run: {{ config.telegram.last_run|format_datetime }}</div>
-            <div class="mt-3">Your account is connected with the Telegram account {{ config.telegram.username }}.</div>
-            <div class="mt-3">
-                <form action="{{ url_for('telegram_disconnect') }}" method="post">
-                    <button class="btn btn-sm btn-warning" type="submit">Disconnect</button>
-                </form>
+    <div class="my-5">
+        <h2>Auto-Move</h2>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="mb-3">Automatically move items that are overdue to the next day. Mark items that should be
+                    moved with a '@automove' label. Use the config key 'automove-by' to move an item by more than one
+                    day.
+                </div>
+                {% if config.automover %}
+                    <div>Last Run: {{ config.automover.last_run|format_datetime }}</div>
+                {% endif %}
             </div>
-            {% else %}
-            <div class="mt-3">
-                Connect your Telegram account by sending <b>/register {{ session.userid }}</b> to <a href="https://t.me/todoistant_bot">@todoistant_bot</a>.
+            <div class="col-md-6">
+                {{ enable_disable('automover') }}
+                <div class="mt-3">
+                    {{ '@automove found' if 'automove' in labels|map(attribute='name') else '@automove not found' }}
+                </div>
             </div>
-            <div class="mt-3">
-                <form class="form-inline" action="{{ url_for('telegram_connect') }}" method="post">
-                    <input class="form-control" type="text" autocomplete="off" name="code" placeholder="Code" title="Code" />
-                    <button class="btn btn-warning ml-2" type="submit">Connect</button>
-                </form>
-            </div>
-            {% endif %}
-            {% endif %}
-        </div>
-        <div class="col-md-6">
-            {{ enable_disable('telegram') }}
-            <div class="mt-3">
-                {{ '@telegram found' if 'telegram' in labels|map(attribute='name') else '@telegram not found' }}
-            </div>
-            {% macro message_config(kind, title) -%}
-            <div class="mt-3">
-                <form action="{{ url_for('update_config', assistant='telegram') }}" method="post">
-                    <div>
-                        <h3>{{ title }}</h3>
-                    </div>
-                    <div class="form-group">
-                        <label for="{{ kind }}_project">Project</label>
-                        <select class="form-control" name="{{ kind }}_project" id="{{ kind }}_project">
-                            {% for project in projects %}
-                            <option value="{{ project.id }}" {{ 'selected' if config.telegram[kind + '_project'] == project.id else '' }}>{{ project.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="{{ kind }}_labels">Labels</label>
-                        <select multiple class="form-control" name="{{ kind }}_labels" id="{{ kind }}_labels">
-                            <option value="0">No Label</option>
-                            {% for label in labels %}
-                            <option value="{{ label.id }}" {{ 'selected' if label.id in config.telegram[kind + '_labels'] else '' }}>{{ label.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <button class="btn btn-primary" type="submit">Save</button>
-                </form>
-            </div>
-            {%- endmacro %}
-            {% if enabled.telegram %}
-            {{ message_config('plain', 'Plain Message') }}
-            {{ message_config('link', 'Link Message') }}
-            {{ message_config('forward', 'Forward Message') }}
-            {% endif %}
         </div>
     </div>
-</div>
-<div class="mt-5">
-    <h2>Todoistant Config</h2>
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            Some assistants can be configured further by adding an invisible link <i>[ ](key: value, key: value)</i> or with <i>!!(key: value, key: value)</i>. See the documentation for a given assistant to learn the supported keys.
+    <div class="my-5">
+        <h2>Prio-Sorter</h2>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="mb-3">Add a '@prio#' label to a task to assign it a certain priority (replace '#' by any
+                    positive or negative number). Today's tasks will be sorted by this priority every 15 minutes.
+                </div>
+                {% if config.priosorter %}
+                    <div>Last Run: {{ config.priosorter.last_run|format_datetime }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                {{ enable_disable('priosorter') }}
+                <div class="mt-3">
+                    Found labels: {{ labels|map(attribute='name')|select('prio_label')|join(', ') }}
+                </div>
+            </div>
         </div>
     </div>
-</div>
+    <div class="my-5">
+        <h2>Telegram Bot</h2>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="mb-3">Connect with <a href="https://t.me/todoistant_bot">@todoistant_bot</a> on Telegram.
+                    All messages sent to it will be added as tasks. You can set different projects and labels depending
+                    on whether the message was forwarded, contains a link, or is a plain message.<br/>Mark a message
+                    with the @telegram label to receive a message when the task is due. You can use a different due date
+                    by using the config key 'telegram-due' with a time (HH:MM) or an ISO datetime (YYYY-mm-ddTHH:MM).
+                </div>
+                {% if enabled.telegram %}
+                    {% if config.telegram.chatid > 0 %}
+                        <div class="mt-3">Last Run: {{ config.telegram.last_run|format_datetime }}</div>
+                        <div class="mt-3">Your account is connected with the Telegram
+                            account {{ config.telegram.username }}.
+                        </div>
+                        <div class="mt-3">
+                            <form action="{{ url_for('telegram_disconnect') }}" method="post">
+                                <button class="btn btn-sm btn-warning" type="submit">Disconnect</button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <div class="mt-3">
+                            Connect your Telegram account by sending <b>/register {{ session.userid }}</b> to <a
+                                href="https://t.me/todoistant_bot">@todoistant_bot</a>.
+                        </div>
+                        <div class="mt-3">
+                            <form class="form-inline" action="{{ url_for('telegram_connect') }}" method="post">
+                                <input class="form-control" type="text" autocomplete="off" name="code"
+                                       placeholder="Code" title="Code"/>
+                                <button class="btn btn-warning ml-2" type="submit">Connect</button>
+                            </form>
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                {{ enable_disable('telegram') }}
+                <div class="mt-3">
+                    {{ '@telegram found' if 'telegram' in labels|map(attribute='name') else '@telegram not found' }}
+                </div>
+                {% macro message_config(kind, title) -%}
+                    <div class="mt-3">
+                        <form action="{{ url_for('update_config', assistant='telegram') }}" method="post">
+                            <div>
+                                <h3>{{ title }}</h3>
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ kind }}_project">Project</label>
+                                <select class="form-control" name="{{ kind }}_project" id="{{ kind }}_project">
+                                    {% for project in projects %}
+                                        <option value="{{ project.id }}" {{ 'selected' if config.telegram[kind + '_project'] == project.id else '' }}>{{ project.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ kind }}_labels">Labels</label>
+                                <select multiple class="form-control" name="{{ kind }}_labels" id="{{ kind }}_labels">
+                                    <option value="0">No Label</option>
+                                    {% for label in labels %}
+                                        <option value="{{ label.name }}" {{ 'selected' if label.name in config.telegram[kind + '_labels'] else '' }}>{{ label.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" type="submit">Save</button>
+                        </form>
+                    </div>
+                {%- endmacro %}
+                {% if enabled.telegram %}
+                    {{ message_config('plain', 'Plain Message') }}
+                    {{ message_config('link', 'Link Message') }}
+                    {{ message_config('forward', 'Forward Message') }}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="mt-5">
+        <h2>Todoistant Config</h2>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                Some assistants can be configured further by adding an invisible link <i>[ ](key: value, key: value)</i>
+                or with <i>!!(key: value, key: value)</i>. See the documentation for a given assistant to learn the
+                supported keys.
+            </div>
+        </div>
+    </div>
 {% endblock %}
