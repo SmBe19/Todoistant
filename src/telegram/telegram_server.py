@@ -14,7 +14,7 @@ from config.config import ConfigManager
 from config.user_config import UserConfig
 from server_handlers import sync_if_necessary
 from utils import my_json
-from utils.utils import sync_with_retry
+from utils.utils import sync_with_retry, sort_projects
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +110,7 @@ class TelegramServer:
                     'cmd': cmd,
                     'project': project.id,
                 }),
-            } for project in user.api.projects]
+            } for project in sort_projects(user.api.projects)]
         return self.buttons_in_rows(project_buttons, 2)
 
     def create_label_buttons(self, user: UserConfig, cmd: str, active: Collection[str]) -> List[Any]:

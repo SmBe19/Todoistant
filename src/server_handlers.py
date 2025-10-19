@@ -8,7 +8,7 @@ from config.telegram_server_config import TelegramServerConfig
 from config.user_config import UserConfig
 from todoistapi import todoist_api
 from todoistapi.hooks import HookData
-from utils.utils import sync_if_necessary
+from utils.utils import sync_if_necessary, sort_projects
 
 handlers = {}
 
@@ -110,7 +110,7 @@ def get_projects(account: str, mgr: ConfigManager) -> Union[List[object], None]:
         return [{
             'name': project.name,
             'id': project.id,
-        } for project in user.api.projects]
+        } for project in sort_projects(user.api.projects)]
 
 
 @handler
@@ -120,9 +120,9 @@ def get_labels(account: str, mgr: ConfigManager) -> Union[List[object], None]:
     with UserConfig.get(mgr, account) as user:
         sync_if_necessary(user)
         return [{
-            'name': project.name,
-            'id': project.id,
-        } for project in user.api.labels]
+            'name': label.name,
+            'id': label.id,
+        } for label in user.api.labels]
 
 
 @handler

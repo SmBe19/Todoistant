@@ -71,7 +71,7 @@ def config() -> object:
         for assistant in ASSISTANTS.keys():
             enabled[assistant] = assistant in current_config and current_config[assistant]['enabled']
         projects = client.get_projects(session['userid'])
-        labels = client.get_labels(session['userid'])
+        labels = sorted(client.get_labels(session['userid']), key=lambda x: x['name'])
         templates = client.get_templates(session['userid'])
         return render_template('config.html', config=current_config, enabled=enabled, projects=projects, labels=labels,
                                templates=templates)

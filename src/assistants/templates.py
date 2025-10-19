@@ -53,6 +53,7 @@ class Templates(Assistant):
             due=config.get('template-due', None),
             depends=[x for x in config.get('template-depends', '').split('|') if x],
             children=[],
+            child_order=item.child_order,
             item_id=None,
             completed=False,
         )
@@ -116,6 +117,7 @@ class Templates(Assistant):
                 new_task = user.api.items.add(
                     item.content,
                     project_id=template.project_id,
+                    child_order=item.child_order,
                     labels=config.ensure_plain_list(item.labels),
                     priority=item.priority,
                     parent_id=parent_id)
@@ -144,10 +146,12 @@ class Templates(Assistant):
         cfg = user.acfg(self)
         if 'src_project' not in cfg:
             return []
+        template_items = [item for item in user.api.items if
+                          item.project_id == cfg['src_project'] and not item.parent_id]
         return [TemplateEntry(
             name=item.content.rstrip(':'),
             id=item.id,
-        ) for item in user.api.items if item.project_id == cfg['src_project'] and not item.parent_id]
+        ) for item in sorted(template_items, key=lambda item: item.child_order)]
 
     def start(self, user: UserConfig, template_id: str, project_id: str):
         try:
@@ -172,11 +176,6 @@ class Templates(Assistant):
             'src_project',
         ]
 
-    def contains_int_value(self, key: str) -> bool:
-        return key in {
-            'src_project',
-        }
-
     def get_config_version(self) -> int:
         return 2
 
@@ -195,6 +194,7 @@ class TemplateItem:
     due: Union[str, None]
     depends: List[str]
     children: List['TemplateItem']
+    child_order: int
     item_id: Union[str, None]
     completed: bool
 

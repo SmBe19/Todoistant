@@ -1,10 +1,10 @@
 import logging
 import time
 from datetime import timezone, datetime, timedelta
-from typing import Callable, Set, Dict
+from typing import Callable, Set, Dict, List
 
-from config import user_config
 from todoistapi.hooks import HookData
+from todoistapi.projects import Project
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +35,17 @@ def local_to_utc(date: datetime) -> datetime:
     if date.tzinfo:
         return date.astimezone(timezone.utc).replace(tzinfo=None)
     return date
+
+
+def sort_projects(projects: List[Project]) -> List[Project]:
+    id_to_project = {project.id: project for project in projects}
+
+    def get_sort_key(project: Project) -> List[int]:
+        if project.parent_id:
+            return get_sort_key(id_to_project[project.parent_id]) + [project.child_order]
+        return [project.child_order]
+
+    return sorted(projects, key=get_sort_key)
 
 
 def parse_task_config(content: str) -> (str, Dict[str, str]):

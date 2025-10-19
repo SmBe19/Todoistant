@@ -47,7 +47,7 @@ class TodoistAPI:
             data['commands'] = json.dumps(commands)
             logger.debug('Execute Todoist commands: %s', commands)
         result = self._session.post(
-            'https://api.todoist.com/sync/v9/sync',
+            'https://api.todoist.com/api/v1/sync',
             data=data,
             headers={
                 'Authorization': f'Bearer {self._token}',

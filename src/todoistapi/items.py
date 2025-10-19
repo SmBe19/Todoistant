@@ -64,6 +64,10 @@ class Item(ApiObject):
         return self._data.get('day_order')
 
     @property
+    def child_order(self) -> int:
+        return self._data.get('child_order')
+
+    @property
     def parent_id(self) -> Union[None, str]:
         return self._data.get('parent_id')
 
