@@ -2,9 +2,9 @@ import datetime
 import json
 import logging
 import os
-import shutil
 import traceback
 import uuid
+import zipfile
 from typing import Dict, List, Any, Union
 
 import requests
@@ -149,10 +149,13 @@ class TodoistAPI:
     def perform_backup(self) -> None:
         self._sync()
         current_day = datetime.datetime.now(self.user.timezone)
-        target_dir = os.path.join(f'./{BACKUP_PATH}/{self.user.id}/{current_day.strftime("%Y%m")}')
+        target_dir = os.path.join(BACKUP_PATH, self.user.id, current_day.strftime("%Y%m"))
         if not os.path.isdir(target_dir):
             os.makedirs(target_dir)
-        shutil.copyfile(f'./{CACHE_PATH}/{self._token}.json', f'{target_dir}/{current_day.strftime("%Y%m%d")}.json')
+        target_file = os.path.join(target_dir, f'{current_day.strftime("%Y%m%d")}.zip')
+        zip_file = zipfile.ZipFile(target_file, 'w', zipfile.ZIP_DEFLATED)
+        zip_file.write(f'./{CACHE_PATH}/{self._token}.json', arcname=f'{current_day.strftime("%Y%m%d")}.json')
+        zip_file.close()
 
     def sync_user_info(self) -> None:
         self._sync(resource_types='["user"]')
