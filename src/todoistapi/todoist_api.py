@@ -149,10 +149,10 @@ class TodoistAPI:
     def perform_backup(self) -> None:
         self._sync()
         current_day = datetime.datetime.now(self.user.timezone)
-        target_dir = os.path.join(f'./{BACKUP_PATH}/{self.user.id}/{current_day.strftime('%Y%m')}')
+        target_dir = os.path.join(f'./{BACKUP_PATH}/{self.user.id}/{current_day.strftime("%Y%m")}')
         if not os.path.isdir(target_dir):
             os.makedirs(target_dir)
-        shutil.copyfile(f'./{CACHE_PATH}/{self._token}.json', f'{target_dir}/{current_day.strftime('%Y%m%d')}.json')
+        shutil.copyfile(f'./{CACHE_PATH}/{self._token}.json', f'{target_dir}/{current_day.strftime("%Y%m%d")}.json')
 
     def sync_user_info(self) -> None:
         self._sync(resource_types='["user"]')
