@@ -2,6 +2,7 @@ from typing import Dict, Iterator, List, Iterable
 
 from assistants.assistant import Assistant
 from assistants.automover import AutoMover
+from assistants.backup import Backup
 from assistants.priosorter import PrioSorter
 from assistants.telegram import Telegram
 from assistants.templates import Templates
@@ -14,6 +15,7 @@ class Assistants:
         self.automover: AutoMover = AutoMover()
         self.telegram: Telegram = Telegram()
         self.templates: Templates = Templates()
+        self.backup: Backup = Backup()
         self.mapping: Dict[str, Assistant] = {
             x.get_id(): x
             for x in self.get_all()
@@ -34,6 +36,7 @@ class Assistants:
             self.automover,
             self.telegram,
             self.templates,
+            self.backup,
         ]
 
     def keys(self) -> Iterable[str]:

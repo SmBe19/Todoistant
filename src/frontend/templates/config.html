@@ -134,6 +134,21 @@
         </div>
     </div>
     <div class="my-5">
+        <h2>Daily Backups</h2>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="mb-3">Create a daily snapshot of the Todoist data.
+                </div>
+                {% if config.backup %}
+                    <div>Last Run: {{ config.backup.last_run|format_datetime }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                {{ enable_disable('backup') }}
+            </div>
+        </div>
+    </div>
+    <div class="my-5">
         <h2>Telegram Bot</h2>
         <div class="row">
             <div class="col-md-6 mb-3">

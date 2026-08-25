@@ -2,21 +2,22 @@ import datetime
 import json
 import logging
 import os
+import shutil
 import traceback
 import uuid
 from typing import Dict, List, Any, Union
 
 import requests
-
 from todoistapi.items import ItemManager
 from todoistapi.labels import LabelManager
 from todoistapi.projects import ProjectManager
+from todoistapi.sections import SectionManager
 from todoistapi.user import User
-from utils.consts import CACHE_PATH
+from utils.consts import CACHE_PATH, BACKUP_PATH
 
 logger = logging.getLogger(__name__)
 
-RESOURCE_TYPES = '["user", "projects", "labels", "items", "day_orders"]'
+RESOURCE_TYPES = '["user", "projects", "sections", "labels", "items", "day_orders"]'
 
 
 # noinspection PyProtectedMember
@@ -34,6 +35,7 @@ class TodoistAPI:
         self._day_orders = {}
         self.items = ItemManager(self)
         self.projects = ProjectManager(self)
+        self.sections = SectionManager(self)
         self.labels = LabelManager(self)
 
         self._load_cache()
@@ -69,6 +71,7 @@ class TodoistAPI:
             self._day_orders.update(parsed.get('day_orders'))
         self.items._update(parsed.get('items'), parsed.get('temp_id_mapping'))
         self.projects._update(parsed.get('projects'), parsed.get('temp_id_mapping'))
+        self.sections._update(parsed.get('sections'), parsed.get('temp_id_mapping'))
         self.labels._update(parsed.get('labels'), parsed.get('temp_id_mapping'))
         # We might only receive the new day_orders dict, but not an update for all items
         for id, order in parsed.get('day_orders', {}).items():
@@ -105,6 +108,7 @@ class TodoistAPI:
                 self._day_orders.update(cache.get('day_orders'))
                 self.items._load_cache(cache.get('items'))
                 self.projects._load_cache(cache.get('projects'))
+                self.sections._load_cache(cache.get('sections'))
                 self.labels._load_cache(cache.get('labels'))
             # If there is a sync file but no cache file we want to perform a full sync
             if os.path.isfile(cache_sync_file):
@@ -123,6 +127,7 @@ class TodoistAPI:
             'day_orders': self._day_orders,
             'items': self.items._dump_cache(),
             'projects': self.projects._dump_cache(),
+            'sections': self.sections._dump_cache(),
             'labels': self.labels._dump_cache(),
         }
         with open(os.path.join(self._cache_dir, f'{self._token}.json'), 'w') as f:
@@ -140,6 +145,14 @@ class TodoistAPI:
 
     def sync(self) -> None:
         self._sync()
+
+    def perform_backup(self) -> None:
+        self._sync()
+        current_day = datetime.datetime.now(self.user.timezone)
+        target_dir = os.path.join(f'./{BACKUP_PATH}/{self.user.id}/{current_day.strftime('%Y%m')}')
+        if not os.path.isdir(target_dir):
+            os.makedirs(target_dir)
+        shutil.copyfile(f'./{CACHE_PATH}/{self._token}.json', f'{target_dir}/{current_day.strftime('%Y%m%d')}.json')
 
     def sync_user_info(self) -> None:
         self._sync(resource_types='["user"]')

@@ -1,4 +1,5 @@
 venv
+/backup
 /cache
 /config
 __pycache__

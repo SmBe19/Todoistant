@@ -32,6 +32,10 @@ class Item(ApiObject):
         return self._data.get('content')
 
     @property
+    def description(self) -> str:
+        return self._data.get('description')
+
+    @property
     def due(self) -> 'ItemDueDate':
         return ItemDueDate(self, self._data.get('due'))
 
@@ -74,6 +78,10 @@ class Item(ApiObject):
     @property
     def project_id(self) -> str:
         return self._data.get('project_id')
+
+    @property
+    def section_id(self) -> str:
+        return self._data.get('section_id')
 
     def mark_as_complete(self) -> None:
         self._api._enqueue_command('item_close', {'id': self.id})

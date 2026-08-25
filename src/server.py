@@ -8,7 +8,6 @@ import time
 from logging.handlers import RotatingFileHandler
 
 import dotenv
-
 import runner
 import server_handlers
 from assistants.assistants import ASSISTANTS
@@ -17,7 +16,7 @@ from config.user_config import UserConfig
 from telegram.telegram_server import TelegramServer
 from todoistapi import todoist_api
 from utils import my_json
-from utils.consts import SOCKET_NAME, CACHE_PATH, CONFIG_PATH
+from utils.consts import SOCKET_NAME, CACHE_PATH, CONFIG_PATH, BACKUP_PATH
 
 dotenv.load_dotenv('secrets.env')
 
@@ -58,6 +57,8 @@ class ThreadingServer(socketserver.UnixStreamServer, socketserver.ThreadingMixIn
 def init_fs() -> None:
     if os.path.exists(SOCKET_NAME):
         os.remove(SOCKET_NAME)
+    if not os.path.isdir(BACKUP_PATH):
+        os.mkdir(BACKUP_PATH)
     if not os.path.isdir(CACHE_PATH):
         os.mkdir(CACHE_PATH)
     if not os.path.exists(CONFIG_PATH):
